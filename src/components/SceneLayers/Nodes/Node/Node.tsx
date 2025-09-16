@@ -19,9 +19,12 @@ interface Props {
 
 export const Node = ({ node, order }: Props) => {
   const modelItem = useModelItem(node.id);
-  const { iconComponent } = useIcon(modelItem.icon);
+  const { iconComponent } = useIcon(modelItem.icon, node.size || 1, node.flipHorizontal || false);
+
+  const nodeSize = node.size || 1;
 
   const position = useMemo(() => {
+    // 常に底面中央を基準にした位置を返す
     return getTilePosition({
       tile: node.tile,
       origin: 'BOTTOM'
@@ -60,7 +63,7 @@ export const Node = ({ node, order }: Props) => {
             <ExpandableLabel
               maxWidth={250}
               expandDirection="BOTTOM"
-              labelHeight={node.labelHeight ?? DEFAULT_LABEL_HEIGHT}
+              labelHeight={(node.labelHeight ?? DEFAULT_LABEL_HEIGHT) * nodeSize}
             >
               <Stack spacing={1}>
                 {modelItem.name && (

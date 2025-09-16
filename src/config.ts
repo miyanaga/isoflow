@@ -42,7 +42,9 @@ export const VIEW_DEFAULTS: Required<
 };
 
 export const VIEW_ITEM_DEFAULTS: Required<Omit<ViewItem, 'id' | 'tile'>> = {
-  labelHeight: 80
+  labelHeight: 80,
+  size: 1,
+  flipHorizontal: false
 };
 
 export const CONNECTOR_DEFAULTS: Required<Omit<Connector, 'id' | 'color'>> = {

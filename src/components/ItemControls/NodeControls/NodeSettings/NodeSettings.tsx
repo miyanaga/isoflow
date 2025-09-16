@@ -1,5 +1,5 @@
 import React from 'react';
-import { Slider, Box, TextField } from '@mui/material';
+import { Slider, Box, TextField, FormControlLabel, Checkbox } from '@mui/material';
 import { ModelItem, ViewItem } from 'src/types';
 import { MarkdownEditor } from 'src/components/MarkdownEditor/MarkdownEditor';
 import { useModelItem } from 'src/hooks/useModelItem';
@@ -61,6 +61,36 @@ export const NodeSettings = ({
           />
         </Section>
       )}
+      <Section title="Icon size">
+        <Slider
+          marks
+          step={1}
+          min={1}
+          max={3}
+          value={node.size || 1}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(value) => {
+            return `${value}x${value}`;
+          }}
+          onChange={(e, newSize) => {
+            const size = newSize as number;
+            onViewItemUpdated({ size });
+          }}
+        />
+      </Section>
+      <Section title="Icon options">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={node.flipHorizontal || false}
+              onChange={(e) => {
+                onViewItemUpdated({ flipHorizontal: e.target.checked });
+              }}
+            />
+          }
+          label="Flip horizontally"
+        />
+      </Section>
       <Section>
         <Box>
           <DeleteButton onClick={onDeleted} />
