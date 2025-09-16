@@ -57,11 +57,13 @@ export const NodeControls = ({ id }: Props) => {
             alignItems="flex-end"
             justifyContent="space-between"
           >
-            <Box
-              component="img"
-              src={icon.url}
-              sx={{ width: 70, height: 70 }}
-            />
+            {!viewItem.labelOnly && (
+              <Box
+                component="img"
+                src={icon.url}
+                sx={{ width: 70, height: 70 }}
+              />
+            )}
             {mode === 'SETTINGS' && (
               <Button
                 endIcon={<ChevronRightIcon />}

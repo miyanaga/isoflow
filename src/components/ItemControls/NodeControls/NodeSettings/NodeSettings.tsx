@@ -46,7 +46,7 @@ export const NodeSettings = ({
           }}
         />
       </Section>
-      {modelItem.name && (
+      {modelItem.name && !node.labelOnly && (
         <Section title="Label height">
           <Slider
             marks
@@ -61,23 +61,25 @@ export const NodeSettings = ({
           />
         </Section>
       )}
-      <Section title="Icon size">
-        <Slider
-          marks
-          step={1}
-          min={1}
-          max={3}
-          value={node.size || 1}
-          valueLabelDisplay="auto"
-          valueLabelFormat={(value) => {
-            return `${value}x${value}`;
-          }}
-          onChange={(e, newSize) => {
-            const size = newSize as number;
-            onViewItemUpdated({ size });
-          }}
-        />
-      </Section>
+      {!node.labelOnly && (
+        <Section title="Icon size">
+          <Slider
+            marks
+            step={1}
+            min={1}
+            max={3}
+            value={node.size || 1}
+            valueLabelDisplay="auto"
+            valueLabelFormat={(value) => {
+              return `${value}x${value}`;
+            }}
+            onChange={(e, newSize) => {
+              const size = newSize as number;
+              onViewItemUpdated({ size });
+            }}
+          />
+        </Section>
+      )}
       <Section title="Icon options">
         <FormControlLabel
           control={
@@ -89,6 +91,17 @@ export const NodeSettings = ({
             />
           }
           label="Flip horizontally"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={node.labelOnly || false}
+              onChange={(e) => {
+                onViewItemUpdated({ labelOnly: e.target.checked });
+              }}
+            />
+          }
+          label="Label only"
         />
       </Section>
       <Section>

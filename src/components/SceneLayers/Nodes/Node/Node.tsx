@@ -22,6 +22,7 @@ export const Node = ({ node, order }: Props) => {
   const { iconComponent } = useIcon(modelItem.icon, node.size || 1, node.flipHorizontal || false);
 
   const nodeSize = node.size || 1;
+  const labelOnly = node.labelOnly || false;
 
   const position = useMemo(() => {
     // 常に底面中央を基準にした位置を返す
@@ -58,12 +59,12 @@ export const Node = ({ node, order }: Props) => {
         {(modelItem.name || description) && (
           <Box
             sx={{ position: 'absolute' }}
-            style={{ bottom: PROJECTED_TILE_SIZE.height / 2 }}
+            style={{ bottom: labelOnly ? PROJECTED_TILE_SIZE.height / 2 : PROJECTED_TILE_SIZE.height / 2 }}
           >
             <ExpandableLabel
               maxWidth={250}
               expandDirection="BOTTOM"
-              labelHeight={(node.labelHeight ?? DEFAULT_LABEL_HEIGHT) * nodeSize}
+              labelHeight={labelOnly ? 0 : (node.labelHeight ?? DEFAULT_LABEL_HEIGHT) * nodeSize}
             >
               <Stack spacing={1}>
                 {modelItem.name && (
@@ -77,7 +78,7 @@ export const Node = ({ node, order }: Props) => {
             </ExpandableLabel>
           </Box>
         )}
-        {iconComponent && (
+        {iconComponent && !labelOnly && (
           <Box
             sx={{
               position: 'absolute',
