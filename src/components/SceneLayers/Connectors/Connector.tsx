@@ -68,9 +68,41 @@ export const Connector = ({ connector: _connector, isSelected }: Props) => {
     isSelected
   ]);
 
-  const directionIcon = useMemo(() => {
-    return getConnectorDirectionIcon(connector.path.tiles);
-  }, [connector.path.tiles]);
+  const arrowIcons = useMemo(() => {
+    const arrows = connector.arrows || 'to';
+    const tiles = connector.path.tiles;
+
+    if (tiles.length < 2 || arrows === 'none') {
+      return [];
+    }
+
+    const icons = [];
+
+    if (arrows === 'to' || arrows === 'both') {
+      // Arrow at the end
+      const directionIcon = getConnectorDirectionIcon(tiles);
+      if (directionIcon) {
+        icons.push({
+          ...directionIcon,
+          id: 'to'
+        });
+      }
+    }
+
+    if (arrows === 'from' || arrows === 'both') {
+      // Arrow at the start - calculate direction from second to first tile
+      const reversedTiles = [...tiles].reverse();
+      const fromDirectionIcon = getConnectorDirectionIcon(reversedTiles);
+      if (fromDirectionIcon) {
+        icons.push({
+          ...fromDirectionIcon,
+          id: 'from'
+        });
+      }
+    }
+
+    return icons;
+  }, [connector.path.tiles, connector.arrows]);
 
   const connectorWidthPx = useMemo(() => {
     return (UNPROJECTED_TILE_SIZE / 100) * connector.width;
@@ -139,9 +171,9 @@ export const Connector = ({ connector: _connector, isSelected }: Props) => {
           );
         })}
 
-        {directionIcon && (
-          <g transform={`translate(${directionIcon.x}, ${directionIcon.y})`}>
-            <g transform={`rotate(${directionIcon.rotation})`}>
+        {arrowIcons.map((arrowIcon) => (
+          <g key={arrowIcon.id} transform={`translate(${arrowIcon.x}, ${arrowIcon.y})`}>
+            <g transform={`rotate(${arrowIcon.rotation})`}>
               <polygon
                 fill="black"
                 stroke={theme.palette.common.white}
@@ -150,7 +182,7 @@ export const Connector = ({ connector: _connector, isSelected }: Props) => {
               />
             </g>
           </g>
-        )}
+        ))}
       </Svg>
     </Box>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Connector, connectorStyleOptions } from 'src/types';
+import { Connector, connectorStyleOptions, arrowOptions } from 'src/types';
 import { Box, Slider, Select, MenuItem, TextField } from '@mui/material';
 import { useConnector } from 'src/hooks/useConnector';
 import { ColorSelector } from 'src/components/ColorSelector/ColorSelector';
@@ -63,7 +63,28 @@ export const ConnectorControls = ({ id }: Props) => {
           }}
         >
           {Object.values(connectorStyleOptions).map((style) => {
-            return <MenuItem value={style}>{style}</MenuItem>;
+            return <MenuItem key={style} value={style}>{style}</MenuItem>;
+          })}
+        </Select>
+      </Section>
+      <Section title="Arrows">
+        <Select
+          value={connector.arrows || 'to'}
+          onChange={(e) => {
+            updateConnector(connector.id, {
+              arrows: e.target.value as Connector['arrows']
+            });
+          }}
+        >
+          {Object.values(arrowOptions).map((arrow) => {
+            return (
+              <MenuItem key={arrow} value={arrow}>
+                {arrow === 'to' && 'To (→)'}
+                {arrow === 'from' && 'From (←)'}
+                {arrow === 'both' && 'Both (↔)'}
+                {arrow === 'none' && 'None (─)'}
+              </MenuItem>
+            );
           })}
         </Select>
       </Section>

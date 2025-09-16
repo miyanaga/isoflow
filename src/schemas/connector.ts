@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { coords, id, constrainedStrings } from './common';
 
 export const connectorStyleOptions = ['SOLID', 'DOTTED', 'DASHED'] as const;
+export const arrowOptions = ['to', 'from', 'both', 'none'] as const;
 
 export const anchorSchema = z.object({
   id,
@@ -20,5 +21,6 @@ export const connectorSchema = z.object({
   color: id.optional(),
   width: z.number().optional(),
   style: z.enum(connectorStyleOptions).optional(),
+  arrows: z.enum(arrowOptions).optional(),
   anchors: z.array(anchorSchema)
 });
