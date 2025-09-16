@@ -51,6 +51,7 @@ module.exports = {
     new webpack.DefinePlugin({
       PACKAGE_VERSION: JSON.stringify(require("../package.json").version),
       REPOSITORY_URL: JSON.stringify(require("../package.json").repository.url),
+      'process.env.SERVER_URL': JSON.stringify(process.env.SERVER_URL || 'http://localhost:3080/')
     })
   ]
 };
