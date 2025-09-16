@@ -1,5 +1,5 @@
-import React from 'react';
-import { Slider, Box, TextField, FormControlLabel, Checkbox } from '@mui/material';
+import React, { useCallback } from 'react';
+import { Slider, Box, TextField, FormControlLabel, Checkbox, Button, Stack } from '@mui/material';
 import { ModelItem, ViewItem } from 'src/types';
 import { MarkdownEditor } from 'src/components/MarkdownEditor/MarkdownEditor';
 import { useModelItem } from 'src/hooks/useModelItem';
@@ -16,13 +16,15 @@ interface Props {
   onModelItemUpdated: (updates: Partial<ModelItem>) => void;
   onViewItemUpdated: (updates: Partial<ViewItem>) => void;
   onDeleted: () => void;
+  onCopy?: () => void;
 }
 
 export const NodeSettings = ({
   node,
   onModelItemUpdated,
   onViewItemUpdated,
-  onDeleted
+  onDeleted,
+  onCopy
 }: Props) => {
   const modelItem = useModelItem(node.id);
 
@@ -124,9 +126,16 @@ export const NodeSettings = ({
         />
       </Section>
       <Section>
-        <Box>
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <Button
+            variant="contained"
+            size="small"
+            onClick={onCopy}
+          >
+            Copy
+          </Button>
           <DeleteButton onClick={onDeleted} />
-        </Box>
+        </Stack>
       </Section>
     </>
   );

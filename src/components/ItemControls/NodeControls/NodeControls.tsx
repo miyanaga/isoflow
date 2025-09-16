@@ -28,7 +28,7 @@ type Mode = keyof typeof ModeOptions;
 
 export const NodeControls = ({ id }: Props) => {
   const [mode, setMode] = useState<Mode>('SETTINGS');
-  const { updateModelItem, updateViewItem, deleteViewItem } = useScene();
+  const { updateModelItem, updateViewItem, deleteViewItem, createViewItem, createModelItem } = useScene();
   const uiStateActions = useUiStateStore((state) => {
     return state.actions;
   });
@@ -40,6 +40,32 @@ export const NodeControls = ({ id }: Props) => {
   const onSwitchMode = useCallback((newMode: Mode) => {
     setMode(newMode);
   }, []);
+
+  const handleCopy = useCallback(() => {
+    // Create copy to the right of the current node
+    const offsetX = 2; // 2 tiles to the right
+    const newItemId = `item_${Date.now()}`;
+
+    // Create new model item (copy of current)
+    createModelItem({
+      ...modelItem,
+      id: newItemId
+    });
+
+    // Create new view item positioned to the right
+    createViewItem({
+      id: newItemId,
+      tile: {
+        x: viewItem.tile.x + offsetX,
+        y: viewItem.tile.y
+      },
+      labelHeight: viewItem.labelHeight,
+      size: viewItem.size,
+      flipHorizontal: viewItem.flipHorizontal,
+      labelOnly: viewItem.labelOnly,
+      labelSize: viewItem.labelSize
+    });
+  }, [modelItem, viewItem, createModelItem, createViewItem]);
 
   return (
     <ControlsContainer>
@@ -103,6 +129,7 @@ export const NodeControls = ({ id }: Props) => {
             uiStateActions.setItemControls(null);
             deleteViewItem(viewItem.id);
           }}
+          onCopy={handleCopy}
         />
       )}
       {mode === 'CHANGE_ICON' && (
