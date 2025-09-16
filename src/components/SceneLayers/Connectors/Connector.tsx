@@ -24,6 +24,12 @@ export const Connector = ({ connector: _connector, isSelected }: Props) => {
   const color = useColor(_connector.color);
   const { currentView } = useScene();
   const connector = useConnector(_connector.id);
+
+  // Early return if connector or path data is missing
+  if (!connector?.path?.rectangle || !connector?.path?.tiles) {
+    return null;
+  }
+
   const { css, pxSize } = useIsoProjection({
     ...connector.path.rectangle
   });

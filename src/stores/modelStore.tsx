@@ -8,11 +8,15 @@ const initialState = () => {
   return createStore<ModelStore>((set, get) => {
     return {
       ...INITIAL_DATA,
+      documentName: 'Untitled',
       actions: {
         get,
         set,
         setTitle: (title: string) => {
           set({ title });
+        },
+        setDocumentName: (documentName: string) => {
+          set({ documentName });
         },
         addView: (name?: string) => {
           const currentViews = get().views;

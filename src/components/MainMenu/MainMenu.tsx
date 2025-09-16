@@ -7,7 +7,8 @@ import {
   DataObject as ExportJsonIcon,
   ImageOutlined as ExportImageIcon,
   FolderOpen as FolderOpenIcon,
-  DeleteOutline as DeleteOutlineIcon,
+  Save as SaveIcon,
+  NoteAdd as NewDocIcon,
   ViewList as ViewListIcon,
   Add as AddIcon,
   Edit as EditIcon
@@ -19,12 +20,14 @@ import { exportAsJSON, modelFromModelStore } from 'src/utils';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
 import { useModelStore } from 'src/stores/modelStore';
 import { MenuItem } from './MenuItem';
+import { DocumentListDialog } from 'src/components/DocumentListDialog/DocumentListDialog';
+import { documentApi } from 'src/services/documentApi';
 
 export const MainMenu = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const model = useModelStore((state) => {
-    return modelFromModelStore(state);
-  });
+  const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
+  const documentName = useModelStore((state) => state.documentName);
+  const title = useModelStore((state) => state.title);
   const views = useModelStore((state) => {
     return state.views;
   });
@@ -44,6 +47,7 @@ export const MainMenu = () => {
     return state.actions;
   });
   const initialDataManager = useInitialDataManager();
+  const { load, clear } = initialDataManager;
 
   const onToggleMenu = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -56,8 +60,6 @@ export const MainMenu = () => {
   const gotoUrl = useCallback((url: string) => {
     window.open(url, '_blank');
   }, []);
-
-  const { load } = initialDataManager;
 
   const onOpenModel = useCallback(async () => {
     const fileInput = document.createElement('input');
@@ -86,22 +88,51 @@ export const MainMenu = () => {
     uiStateActions.setIsMainMenuOpen(false);
   }, [uiStateActions, load]);
 
+  const onNewDocument = useCallback(() => {
+    const name = window.prompt('Enter document name:', 'New Document');
+    if (!name) return;
+
+    clear();
+    modelActions.setDocumentName(name);
+    modelActions.setTitle(name);
+    uiStateActions.setIsMainMenuOpen(false);
+  }, [modelActions, clear, uiStateActions]);
+
+  const onSaveDocument = useCallback(async () => {
+    let currentName = documentName;
+    if (!currentName || currentName === 'Untitled') {
+      currentName = title || 'Untitled';
+    }
+    const name = window.prompt('Save document as:', currentName);
+    if (!name) return;
+
+    try {
+      const modelState = modelActions.get();
+      const model = modelFromModelStore(modelState);
+      await documentApi.save(name, model);
+      modelActions.setDocumentName(name);
+    } catch (err: any) {
+      alert(`Failed to save: ${err.message}`);
+    }
+    uiStateActions.setIsMainMenuOpen(false);
+  }, [documentName, title, modelActions, uiStateActions]);
+
+  const onOpenDocument = useCallback(() => {
+    setDocumentDialogOpen(true);
+    uiStateActions.setIsMainMenuOpen(false);
+  }, [uiStateActions]);
+
   const onExportAsJSON = useCallback(async () => {
+    const modelState = modelActions.get();
+    const model = modelFromModelStore(modelState);
     exportAsJSON(model);
     uiStateActions.setIsMainMenuOpen(false);
-  }, [model, uiStateActions]);
+  }, [modelActions, uiStateActions]);
 
   const onExportAsImage = useCallback(() => {
     uiStateActions.setIsMainMenuOpen(false);
     uiStateActions.setDialog('EXPORT_IMAGE');
   }, [uiStateActions]);
-
-  const { clear } = initialDataManager;
-
-  const onClearCanvas = useCallback(() => {
-    clear();
-    uiStateActions.setIsMainMenuOpen(false);
-  }, [uiStateActions, clear]);
 
   const onChangeView = useCallback((viewId: string) => {
     uiStateActions.setView(viewId);
@@ -162,9 +193,23 @@ export const MainMenu = () => {
         }}
       >
         <Card sx={{ py: 1 }}>
+          <MenuItem onClick={onNewDocument} Icon={<NewDocIcon />}>
+            New Document
+          </MenuItem>
+
+          <MenuItem onClick={onSaveDocument} Icon={<SaveIcon />}>
+            Save {documentName ? `(${documentName})` : ''}
+          </MenuItem>
+
+          <MenuItem onClick={onOpenDocument} Icon={<FolderOpenIcon />}>
+            Open Document
+          </MenuItem>
+
+          <Divider />
+
           {mainMenuOptions.includes('ACTION.OPEN') && (
             <MenuItem onClick={onOpenModel} Icon={<FolderOpenIcon />}>
-              Open
+              Open from File
             </MenuItem>
           )}
 
@@ -180,11 +225,6 @@ export const MainMenu = () => {
             </MenuItem>
           )}
 
-          {mainMenuOptions.includes('ACTION.CLEAR_CANVAS') && (
-            <MenuItem onClick={onClearCanvas} Icon={<DeleteOutlineIcon />}>
-              Clear the canvas
-            </MenuItem>
-          )}
 
           {sectionVisibility.views && (
             <>
@@ -256,6 +296,10 @@ export const MainMenu = () => {
           )}
         </Card>
       </Menu>
+      <DocumentListDialog
+        open={documentDialogOpen}
+        onClose={() => setDocumentDialogOpen(false)}
+      />
     </UiElement>
   );
 };

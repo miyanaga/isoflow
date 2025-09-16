@@ -34,7 +34,7 @@ export const DEFAULT_FONT_FAMILY = 'Roboto, Arial, sans-serif';
 export const VIEW_DEFAULTS: Required<
   Omit<View, 'id' | 'description' | 'lastUpdated'>
 > = {
-  name: 'Untitled view',
+  name: 'Overview',
   items: [],
   connectors: [],
   rectangles: [],
@@ -90,7 +90,7 @@ export const INITIAL_DATA: InitialData = {
   fitToView: false
 };
 export const INITIAL_UI_STATE = {
-  zoom: 1,
+  zoom: 0.4,
   scroll: {
     position: CoordsUtils.zero(),
     offset: CoordsUtils.zero()

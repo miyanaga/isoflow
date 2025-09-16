@@ -177,9 +177,17 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
 async function startServer() {
   try {
     await initialize()
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running at ${SERVER_URL}`)
       console.log(`Data directory: ${path.resolve(DATA_DIR)}`)
+    })
+
+    // Keep the process alive
+    process.on('SIGINT', () => {
+      console.log('\nShutting down server...')
+      server.close(() => {
+        process.exit(0)
+      })
     })
   } catch (error) {
     console.error('Failed to start server:', error)

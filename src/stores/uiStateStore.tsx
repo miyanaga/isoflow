@@ -53,7 +53,7 @@ const initialState = () => {
               offset: CoordsUtils.zero()
             },
             itemControls: null,
-            zoom: 1
+            zoom: 0.4
           });
         },
         setMode: (mode) => {

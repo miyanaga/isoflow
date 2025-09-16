@@ -36,10 +36,12 @@ export type TextBox = z.infer<typeof textBoxSchema>;
 export type Rectangle = z.infer<typeof rectangleSchema>;
 
 export type ModelStore = Model & {
+  documentName?: string;
   actions: {
     get: StoreApi<ModelStore>['getState'];
     set: StoreApi<ModelStore>['setState'];
     setTitle: (title: string) => void;
+    setDocumentName: (name: string) => void;
     addView: (name?: string) => string;
     deleteView: (viewId: string) => boolean;
     updateView: (viewId: string, updates: Partial<View>) => void;

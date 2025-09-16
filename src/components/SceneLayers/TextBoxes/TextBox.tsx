@@ -12,6 +12,11 @@ interface Props {
 export const TextBox = ({ textBox }: Props) => {
   const { paddingX, fontProps } = useTextBoxProps(textBox);
 
+  // Early return if textBox data is missing
+  if (!textBox?.size?.width || !textBox?.tile) {
+    return null;
+  }
+
   const to = useMemo(() => {
     return CoordsUtils.add(textBox.tile, {
       x: textBox.size.width,
