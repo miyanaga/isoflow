@@ -80,6 +80,25 @@ export const NodeSettings = ({
           />
         </Section>
       )}
+      {modelItem.name && (
+        <Section title="Label size">
+          <Slider
+            marks
+            step={0.5}
+            min={1}
+            max={2}
+            value={node.labelSize || 1}
+            valueLabelDisplay="auto"
+            valueLabelFormat={(value) => {
+              return `${value}x`;
+            }}
+            onChange={(e, newSize) => {
+              const labelSize = newSize as number;
+              onViewItemUpdated({ labelSize });
+            }}
+          />
+        </Section>
+      )}
       <Section title="Icon options">
         <FormControlLabel
           control={

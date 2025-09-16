@@ -45,7 +45,8 @@ export const VIEW_ITEM_DEFAULTS: Required<Omit<ViewItem, 'id' | 'tile'>> = {
   labelHeight: 80,
   size: 1,
   flipHorizontal: false,
-  labelOnly: false
+  labelOnly: false,
+  labelSize: 1
 };
 
 export const CONNECTOR_DEFAULTS: Required<Omit<Connector, 'id' | 'color'>> = {

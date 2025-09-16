@@ -7,6 +7,7 @@ import { Label, Props as LabelProps } from './Label';
 
 type Props = Omit<LabelProps, 'maxHeight'> & {
   onToggleExpand?: (isExpanded: boolean) => void;
+  labelSize?: number;
 };
 
 const STANDARD_LABEL_HEIGHT = 80;
@@ -14,6 +15,7 @@ const STANDARD_LABEL_HEIGHT = 80;
 export const ExpandableLabel = ({
   children,
   onToggleExpand,
+  labelSize = 1,
   ...rest
 }: Props) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -43,6 +45,7 @@ export const ExpandableLabel = ({
       {...rest}
       maxHeight={containerMaxHeight}
       maxWidth={isExpanded ? rest.maxWidth * 1.5 : rest.maxWidth}
+      labelSize={labelSize}
     >
       <Box
         ref={contentRef}

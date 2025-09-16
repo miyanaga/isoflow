@@ -10,7 +10,8 @@ export const viewItemSchema = z.object({
   labelHeight: z.number().optional(),
   size: z.number().min(1).max(3).default(1).optional(),
   flipHorizontal: z.boolean().default(false).optional(),
-  labelOnly: z.boolean().default(false).optional()
+  labelOnly: z.boolean().default(false).optional(),
+  labelSize: z.number().min(1).max(2).default(1).optional()
 });
 
 export const viewSchema = z.object({

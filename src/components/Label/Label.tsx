@@ -10,6 +10,7 @@ export interface Props {
   expandDirection?: 'CENTER' | 'BOTTOM';
   children: React.ReactNode;
   sx?: SxProps;
+  labelSize?: number;
 }
 
 export const Label = ({
@@ -18,7 +19,8 @@ export const Label = ({
   maxHeight,
   expandDirection = 'CENTER',
   labelHeight = 0,
-  sx
+  sx,
+  labelSize = 1
 }: Props) => {
   const contentRef = useRef<HTMLDivElement>();
 
@@ -67,7 +69,7 @@ export const Label = ({
           transformOrigin: 'bottom center',
           transform: `translate(-50%, ${
             expandDirection === 'BOTTOM' ? '-100%' : '-50%'
-          })`,
+          }) scale(${labelSize})`,
           overflow: 'hidden',
           ...sx
         }}

@@ -23,6 +23,7 @@ export const Node = ({ node, order }: Props) => {
 
   const nodeSize = node.size || 1;
   const labelOnly = node.labelOnly || false;
+  const labelSize = node.labelSize || 1;
 
   const position = useMemo(() => {
     // 常に底面中央を基準にした位置を返す
@@ -65,6 +66,7 @@ export const Node = ({ node, order }: Props) => {
               maxWidth={250}
               expandDirection="BOTTOM"
               labelHeight={labelOnly ? 0 : (node.labelHeight ?? DEFAULT_LABEL_HEIGHT) * nodeSize}
+              labelSize={labelSize}
             >
               <Stack spacing={1}>
                 {modelItem.name && (
