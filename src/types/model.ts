@@ -40,5 +40,9 @@ export type ModelStore = Model & {
     get: StoreApi<ModelStore>['getState'];
     set: StoreApi<ModelStore>['setState'];
     setTitle: (title: string) => void;
+    addView: (name?: string) => string;
+    deleteView: (viewId: string) => boolean;
+    updateView: (viewId: string, updates: Partial<View>) => void;
+    reorderViews: (views: View[]) => void;
   };
 };

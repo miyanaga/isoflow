@@ -1,7 +1,8 @@
 import React, { createContext, useRef, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
-import { ModelStore } from 'src/types';
-import { INITIAL_DATA } from 'src/config';
+import { ModelStore, View } from 'src/types';
+import { INITIAL_DATA, VIEW_DEFAULTS } from 'src/config';
+import { nanoid } from 'nanoid';
 
 const initialState = () => {
   return createStore<ModelStore>((set, get) => {
@@ -12,6 +13,36 @@ const initialState = () => {
         set,
         setTitle: (title: string) => {
           set({ title });
+        },
+        addView: (name?: string) => {
+          const currentViews = get().views;
+          const newView: View = {
+            ...VIEW_DEFAULTS,
+            id: nanoid(),
+            name: name || `View ${currentViews.length + 1}`,
+            lastUpdated: new Date().toISOString()
+          };
+          set({ views: [...currentViews, newView] });
+          return newView.id;
+        },
+        deleteView: (viewId: string) => {
+          const currentViews = get().views;
+          if (currentViews.length <= 1) {
+            return false;
+          }
+          set({ views: currentViews.filter(v => v.id !== viewId) });
+          return true;
+        },
+        updateView: (viewId: string, updates: Partial<View>) => {
+          const currentViews = get().views;
+          set({
+            views: currentViews.map(v =>
+              v.id === viewId ? { ...v, ...updates } : v
+            )
+          });
+        },
+        reorderViews: (views: View[]) => {
+          set({ views });
         }
       }
     };

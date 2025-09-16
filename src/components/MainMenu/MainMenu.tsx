@@ -8,7 +8,9 @@ import {
   ImageOutlined as ExportImageIcon,
   FolderOpen as FolderOpenIcon,
   DeleteOutline as DeleteOutlineIcon,
-  ViewList as ViewListIcon
+  ViewList as ViewListIcon,
+  Add as AddIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
@@ -25,6 +27,9 @@ export const MainMenu = () => {
   });
   const views = useModelStore((state) => {
     return state.views;
+  });
+  const modelActions = useModelStore((state) => {
+    return state.actions;
   });
   const currentViewId = useUiStateStore((state) => {
     return state.view;
@@ -101,6 +106,17 @@ export const MainMenu = () => {
   const onChangeView = useCallback((viewId: string) => {
     uiStateActions.setView(viewId);
     uiStateActions.setIsMainMenuOpen(false);
+  }, [uiStateActions]);
+
+  const onAddView = useCallback(() => {
+    const newViewId = modelActions.addView();
+    uiStateActions.setView(newViewId);
+    uiStateActions.setIsMainMenuOpen(false);
+  }, [modelActions, uiStateActions]);
+
+  const onEditViews = useCallback(() => {
+    uiStateActions.setIsMainMenuOpen(false);
+    uiStateActions.setDialog('EDIT_VIEWS');
   }, [uiStateActions]);
 
   const sectionVisibility = useMemo(() => {
@@ -188,6 +204,12 @@ export const MainMenu = () => {
                   {view.name}
                 </MenuItem>
               ))}
+              <MenuItem onClick={onAddView} Icon={<AddIcon />}>
+                Add New View
+              </MenuItem>
+              <MenuItem onClick={onEditViews} Icon={<EditIcon />}>
+                Edit Views
+              </MenuItem>
             </>
           )}
 

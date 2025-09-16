@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Box, useTheme, Typography, Stack, TextField } from '@mui/material';
-import { ChevronRight } from '@mui/icons-material';
+import { Box, useTheme, Typography, Stack, TextField, Menu, MenuItem } from '@mui/material';
+import { ChevronRight, ArrowDropDown } from '@mui/icons-material';
 import { EditorModeEnum } from 'src/types';
 import { UiElement } from 'components/UiElement/UiElement';
 import { SceneLayer } from 'src/components/SceneLayer/SceneLayer';
@@ -16,6 +16,7 @@ import { ContextMenuManager } from 'src/components/ContextMenu/ContextMenuManage
 import { useScene } from 'src/hooks/useScene';
 import { useModelStore } from 'src/stores/modelStore';
 import { ExportImageDialog } from '../ExportImageDialog/ExportImageDialog';
+import { EditViewsDialog } from '../EditViewsDialog/EditViewsDialog';
 
 const ToolsEnum = {
   MAIN_MENU: 'MAIN_MENU',
@@ -88,11 +89,15 @@ export const UiOverlay = () => {
   const title = useModelStore((state) => {
     return state.title;
   });
+  const views = useModelStore((state) => {
+    return state.views;
+  });
   const modelActions = useModelStore((state) => {
     return state.actions;
   });
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
+  const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleTitleClick = () => {
     if (editorMode === EditorModeEnum.EDITABLE) {
@@ -256,9 +261,24 @@ export const UiOverlay = () => {
                   </Typography>
                 )}
                 <ChevronRight />
-                <Typography fontWeight={600} color="text.secondary">
-                  {currentView.name}
-                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      opacity: 0.8
+                    }
+                  }}
+                  onClick={(event) => {
+                    setViewMenuAnchor(event.currentTarget);
+                  }}
+                >
+                  <Typography fontWeight={600} color="text.secondary">
+                    {currentView.name}
+                  </Typography>
+                  <ArrowDropDown />
+                </Box>
               </Stack>
             </UiElement>
           </Box>
@@ -296,10 +316,41 @@ export const UiOverlay = () => {
         />
       )}
 
+      {dialog === 'EDIT_VIEWS' && (
+        <EditViewsDialog
+          onClose={() => {
+            return uiStateActions.setDialog(null);
+          }}
+        />
+      )}
+
       <SceneLayer>
         <Box ref={contextMenuAnchorRef} />
         <ContextMenuManager anchorEl={contextMenuAnchorRef.current} />
       </SceneLayer>
+
+      <Menu
+        anchorEl={viewMenuAnchor}
+        open={Boolean(viewMenuAnchor)}
+        onClose={() => setViewMenuAnchor(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        {views.map((view) => (
+          <MenuItem
+            key={view.id}
+            selected={view.id === currentView.id}
+            onClick={() => {
+              uiStateActions.setView(view.id);
+              setViewMenuAnchor(null);
+            }}
+          >
+            {view.name}
+          </MenuItem>
+        ))}
+      </Menu>
     </>
   );
 };
