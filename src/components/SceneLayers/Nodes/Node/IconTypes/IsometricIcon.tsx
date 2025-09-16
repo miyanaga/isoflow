@@ -26,6 +26,11 @@ export const IsometricIcon = ({ url, size = 1, flipHorizontal = false, onImageLo
   const scaledWidth = baseWidth * size;
   const scaledHeight = elementSize.height * size / (elementSize.width / baseWidth);
 
+  // アイソメトリックグリッドの中心から下の点までの距離
+  const gridCenterToBottom = PROJECTED_TILE_SIZE.height / 2;
+  // 倍率に応じてY軸方向にオフセット（2倍のときは1倍、3倍のときは2倍）
+  const yOffset = gridCenterToBottom * (size - 1);
+
   return (
     <Box
       ref={ref}
@@ -35,10 +40,10 @@ export const IsometricIcon = ({ url, size = 1, flipHorizontal = false, onImageLo
       sx={{
         position: 'absolute',
         width: scaledWidth,
-        top: -scaledHeight,
+        top: -scaledHeight + yOffset,
         left: -scaledWidth / 2,
         pointerEvents: 'none',
-        transformOrigin: 'bottom center',
+        transformOrigin: 'center bottom',
         transform: flipHorizontal ? 'scaleX(-1)' : 'none'
       }}
     />

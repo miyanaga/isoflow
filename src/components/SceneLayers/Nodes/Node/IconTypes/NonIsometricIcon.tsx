@@ -14,9 +14,14 @@ export const NonIsometricIcon = ({ icon, size = 1, flipHorizontal = false }: Pro
   const baseWidth = PROJECTED_TILE_SIZE.width * 0.7;
   const scaledWidth = baseWidth * size;
 
-  // 底面中央を基準にした位置調整
+  // アイソメトリックグリッドの中心から下の点までの距離
+  const gridCenterToBottom = PROJECTED_TILE_SIZE.height / 2;
+  // 倍率に応じてY軸方向にオフセット（2倍のときは1倍、3倍のときは2倍）
+  const yOffset = gridCenterToBottom * (size - 1);
+
+  // アイソメトリック投影を考慮した位置調整
   const offsetX = -scaledWidth / 2;
-  const offsetY = -PROJECTED_TILE_SIZE.height / 2 - (size - 1) * PROJECTED_TILE_SIZE.height / 2;
+  const offsetY = -PROJECTED_TILE_SIZE.height / 2 + yOffset;
 
   return (
     <Box sx={{ pointerEvents: 'none' }}>
@@ -25,7 +30,7 @@ export const NonIsometricIcon = ({ icon, size = 1, flipHorizontal = false }: Pro
           position: 'absolute',
           left: offsetX,
           top: offsetY,
-          transformOrigin: 'bottom center',
+          transformOrigin: 'center bottom',
           transform: `${getIsoProjectionCss()}${flipHorizontal ? ' scaleX(-1)' : ''}`
         }}
       >
@@ -33,7 +38,10 @@ export const NonIsometricIcon = ({ icon, size = 1, flipHorizontal = false }: Pro
           component="img"
           src={icon.url}
           alt={`icon-${icon.id}`}
-          sx={{ width: scaledWidth }}
+          sx={{
+            width: scaledWidth,
+            transformOrigin: 'center bottom'
+          }}
         />
       </Box>
     </Box>

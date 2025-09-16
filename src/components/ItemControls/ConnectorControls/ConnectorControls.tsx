@@ -88,6 +88,18 @@ export const ConnectorControls = ({ id }: Props) => {
           })}
         </Select>
       </Section>
+      <Section title="Arrow Offset">
+        <Slider
+          marks
+          step={0.5}
+          min={0}
+          max={5}
+          value={connector.arrowOffset || 0}
+          onChange={(e, newOffset) => {
+            updateConnector(connector.id, { arrowOffset: newOffset as number });
+          }}
+        />
+      </Section>
       <Section>
         <Box>
           <DeleteButton
