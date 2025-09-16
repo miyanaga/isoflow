@@ -97,6 +97,11 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
     setShowGrid(checked);
   };
 
+  const [transparentBackground, setTransparentBackground] = useState(true);
+  const handleTransparentChange = (checked: boolean) => {
+    setTransparentBackground(checked);
+  };
+
   const [backgroundColor, setBackgroundColor] = useState<string>(
     customVars.customPalette.diagramBg
   );
@@ -106,7 +111,7 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
 
   useEffect(() => {
     setImageData(undefined);
-  }, [showGrid, backgroundColor]);
+  }, [showGrid, backgroundColor, transparentBackground]);
 
   return (
     <Dialog open onClose={onClose}>
@@ -154,7 +159,7 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
                     }}
                     renderer={{
                       showGrid,
-                      backgroundColor
+                      backgroundColor: transparentBackground ? 'transparent' : backgroundColor
                     }}
                   />
                 </Box>
@@ -176,16 +181,29 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
           <Stack alignItems="center" spacing={2}>
             {imageData && (
               <Box
-                component="img"
                 sx={{
-                  maxWidth: '100%'
+                  maxWidth: '100%',
+                  position: 'relative',
+                  backgroundImage: transparentBackground
+                    ? `repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 50% / 20px 20px`
+                    : 'none',
+                  backgroundSize: '20px 20px'
                 }}
                 style={{
                   width: unprojectedBounds.width
                 }}
-                src={imageData}
-                alt="preview"
-              />
+              >
+                <Box
+                  component="img"
+                  sx={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    width: '100%'
+                  }}
+                  src={imageData}
+                  alt="preview"
+                />
+              </Box>
             )}
             <Box sx={{ width: '100%' }}>
               <Box component="fieldset">
@@ -206,14 +224,28 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
                   }
                 />
                 <FormControlLabel
-                  label="Background color"
+                  label="Transparent background"
                   control={
-                    <ColorPicker
-                      value={backgroundColor}
-                      onChange={handleBackgroundColorChange}
+                    <Checkbox
+                      size="small"
+                      checked={transparentBackground}
+                      onChange={(event) => {
+                        handleTransparentChange(event.target.checked);
+                      }}
                     />
                   }
                 />
+                {!transparentBackground && (
+                  <FormControlLabel
+                    label="Background color"
+                    control={
+                      <ColorPicker
+                        value={backgroundColor}
+                        onChange={handleBackgroundColorChange}
+                      />
+                    }
+                  />
+                )}
               </Box>
             </Box>
             {imageData && (
