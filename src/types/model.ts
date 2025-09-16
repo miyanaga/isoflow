@@ -37,5 +37,6 @@ export type ModelStore = Model & {
   actions: {
     get: StoreApi<ModelStore>['getState'];
     set: StoreApi<ModelStore>['setState'];
+    setTitle: (title: string) => void;
   };
 };

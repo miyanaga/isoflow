@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef } from 'react';
-import { Box, useTheme, Typography, Stack } from '@mui/material';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Box, useTheme, Typography, Stack, TextField } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import { EditorModeEnum } from 'src/types';
 import { UiElement } from 'components/UiElement/UiElement';
@@ -88,6 +88,38 @@ export const UiOverlay = () => {
   const title = useModelStore((state) => {
     return state.title;
   });
+  const modelActions = useModelStore((state) => {
+    return state.actions;
+  });
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(title);
+
+  const handleTitleClick = () => {
+    if (editorMode === EditorModeEnum.EDITABLE) {
+      setIsEditingTitle(true);
+      setEditedTitle(title);
+    }
+  };
+
+  const handleTitleSave = () => {
+    modelActions.setTitle(editedTitle);
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleCancel = () => {
+    setEditedTitle(title);
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      handleTitleCancel();
+    }
+  };
+
   const { size: rendererSize } = useResizeObserver(rendererEl);
 
   return (
@@ -186,13 +218,43 @@ export const UiOverlay = () => {
                 display: 'inline-flex',
                 px: 2,
                 alignItems: 'center',
-                height: '100%'
+                height: '100%',
+                pointerEvents: 'auto'
               }}
             >
               <Stack direction="row" alignItems="center">
-                <Typography fontWeight={600} color="text.secondary">
-                  {title}
-                </Typography>
+                {isEditingTitle ? (
+                  <TextField
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onKeyDown={handleTitleKeyDown}
+                    onBlur={handleTitleSave}
+                    autoFocus
+                    size="small"
+                    variant="standard"
+                    sx={{
+                      '& .MuiInputBase-input': {
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        padding: 0
+                      }
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    fontWeight={600}
+                    color="text.secondary"
+                    onClick={handleTitleClick}
+                    sx={{
+                      cursor: editorMode === EditorModeEnum.EDITABLE ? 'pointer' : 'default',
+                      '&:hover': editorMode === EditorModeEnum.EDITABLE ? {
+                        textDecoration: 'underline'
+                      } : {}
+                    }}
+                  >
+                    {title}
+                  </Typography>
+                )}
                 <ChevronRight />
                 <Typography fontWeight={600} color="text.secondary">
                   {currentView.name}

@@ -9,7 +9,10 @@ const initialState = () => {
       ...INITIAL_DATA,
       actions: {
         get,
-        set
+        set,
+        setTitle: (title: string) => {
+          set({ title });
+        }
       }
     };
   });

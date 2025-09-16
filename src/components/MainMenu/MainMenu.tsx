@@ -7,7 +7,8 @@ import {
   DataObject as ExportJsonIcon,
   ImageOutlined as ExportImageIcon,
   FolderOpen as FolderOpenIcon,
-  DeleteOutline as DeleteOutlineIcon
+  DeleteOutline as DeleteOutlineIcon,
+  ViewList as ViewListIcon
 } from '@mui/icons-material';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
@@ -21,6 +22,12 @@ export const MainMenu = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const model = useModelStore((state) => {
     return modelFromModelStore(state);
+  });
+  const views = useModelStore((state) => {
+    return state.views;
+  });
+  const currentViewId = useUiStateStore((state) => {
+    return state.view;
   });
   const isMainMenuOpen = useUiStateStore((state) => {
     return state.isMainMenuOpen;
@@ -91,6 +98,11 @@ export const MainMenu = () => {
     uiStateActions.setIsMainMenuOpen(false);
   }, [uiStateActions, clear]);
 
+  const onChangeView = useCallback((viewId: string) => {
+    uiStateActions.setView(viewId);
+    uiStateActions.setIsMainMenuOpen(false);
+  }, [uiStateActions]);
+
   const sectionVisibility = useMemo(() => {
     return {
       actions: Boolean(
@@ -103,9 +115,10 @@ export const MainMenu = () => {
           return opt.includes('LINK');
         })
       ),
-      version: Boolean(mainMenuOptions.includes('VERSION'))
+      version: Boolean(mainMenuOptions.includes('VERSION')),
+      views: views.length > 1
     };
-  }, [mainMenuOptions]);
+  }, [mainMenuOptions, views.length]);
 
   if (mainMenuOptions.length === 0) {
     return null;
@@ -155,6 +168,27 @@ export const MainMenu = () => {
             <MenuItem onClick={onClearCanvas} Icon={<DeleteOutlineIcon />}>
               Clear the canvas
             </MenuItem>
+          )}
+
+          {sectionVisibility.views && (
+            <>
+              <Divider />
+              <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
+                Views
+              </Typography>
+              {views.map((view) => (
+                <MenuItem
+                  key={view.id}
+                  onClick={() => onChangeView(view.id)}
+                  Icon={<ViewListIcon />}
+                  sx={{
+                    backgroundColor: currentViewId === view.id ? 'action.selected' : 'transparent'
+                  }}
+                >
+                  {view.name}
+                </MenuItem>
+              ))}
+            </>
           )}
 
           {sectionVisibility.links && (

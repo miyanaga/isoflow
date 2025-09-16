@@ -18,6 +18,8 @@ const initialState = () => {
       mainMenuOptions: [],
       editorMode: 'EXPLORABLE_READONLY',
       mode: getStartingMode('EXPLORABLE_READONLY'),
+      temporaryMode: null,
+      previousMode: null,
       iconCategoriesState: [],
       isMainMenuOpen: false,
       dialog: null,
@@ -56,6 +58,27 @@ const initialState = () => {
         },
         setMode: (mode) => {
           set({ mode });
+        },
+        setTemporaryMode: (temporaryMode) => {
+          const currentState = get();
+          // 既に一時モードでない場合のみ、現在のモードを保存
+          if (!currentState.temporaryMode) {
+            set({
+              temporaryMode,
+              previousMode: currentState.mode,
+              mode: temporaryMode
+            });
+          }
+        },
+        clearTemporaryMode: () => {
+          const currentState = get();
+          if (currentState.previousMode) {
+            set({
+              mode: currentState.previousMode,
+              temporaryMode: null,
+              previousMode: null
+            });
+          }
         },
         setDialog: (dialog) => {
           set({ dialog });

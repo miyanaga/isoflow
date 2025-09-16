@@ -49,7 +49,7 @@ export const colors: Colors = [
 export const icons: Icons = isopacks;
 
 export const initialData: InitialData = {
-  title: 'Airport management software system',
+  title: 'Your Custom Title',
   icons,
   colors,
   items: [
@@ -196,7 +196,7 @@ export const initialData: InitialData = {
   views: [
     {
       id: 'overview',
-      name: 'Overview',
+      name: '概要',
       items: [
         {
           labelHeight: 80,
@@ -767,6 +767,22 @@ export const initialData: InitialData = {
           tile: { x: 2, y: -2 }
         }
       ]
+    },
+    {
+      id: 'detail',
+      name: '詳細',
+      items: [{ id: 'item1', tile: { x: 0, y: 0 }, labelHeight: 140 }],
+      connectors: [],
+      rectangles: [],
+      textBoxes: []
+    },
+    {
+      id: 'network',
+      name: 'ネットワーク構成',
+      items: [{ id: 'item1', tile: { x: 2, y: 2 }, labelHeight: 140 }],
+      connectors: [],
+      rectangles: [],
+      textBoxes: []
     }
   ]
 };

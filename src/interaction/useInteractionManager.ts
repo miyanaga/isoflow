@@ -161,6 +161,25 @@ export const useInteractionManager = () => {
       }
     };
 
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Spaceキーが押された時、一時的にPanモードに切り替え
+      if (e.code === 'Space' && !e.repeat && uiState.mode.type !== 'PAN') {
+        e.preventDefault();
+        uiState.actions.setTemporaryMode({
+          type: 'PAN',
+          showCursor: false
+        });
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      // Spaceキーが離された時、元のモードに戻る
+      if (e.code === 'Space') {
+        e.preventDefault();
+        uiState.actions.clearTemporaryMode();
+      }
+    };
+
     el.addEventListener('mousemove', onMouseEvent);
     el.addEventListener('mousedown', onMouseEvent);
     el.addEventListener('mouseup', onMouseEvent);
@@ -168,6 +187,8 @@ export const useInteractionManager = () => {
     el.addEventListener('touchstart', onTouchStart);
     el.addEventListener('touchmove', onTouchMove);
     el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('keydown', onKeyDown);
+    el.addEventListener('keyup', onKeyUp);
     uiState.rendererEl?.addEventListener('wheel', onScroll);
 
     return () => {
@@ -178,6 +199,8 @@ export const useInteractionManager = () => {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('keydown', onKeyDown);
+      el.removeEventListener('keyup', onKeyUp);
       uiState.rendererEl?.removeEventListener('wheel', onScroll);
     };
   }, [

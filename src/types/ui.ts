@@ -137,6 +137,8 @@ export interface UiState {
   editorMode: keyof typeof EditorModeEnum;
   iconCategoriesState: IconCollectionState[];
   mode: Mode;
+  temporaryMode: Mode | null; // Spaceキー等で一時的に切り替わったモード
+  previousMode: Mode | null; // 一時モード切り替え前の元のモード
   dialog: keyof typeof DialogTypeEnum | null;
   isMainMenuOpen: boolean;
   itemControls: ItemControls | null;
@@ -155,6 +157,8 @@ export interface UiStateActions {
   setIconCategoriesState: (iconCategoriesState: IconCollectionState[]) => void;
   resetUiState: () => void;
   setMode: (mode: Mode) => void;
+  setTemporaryMode: (mode: Mode) => void; // 一時的にモードを切り替え
+  clearTemporaryMode: () => void; // 一時モードをクリアして元のモードに戻る
   incrementZoom: () => void;
   decrementZoom: () => void;
   setIsMainMenuOpen: (isOpen: boolean) => void;
