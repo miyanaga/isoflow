@@ -15,7 +15,8 @@ import {
   Alert,
   Checkbox,
   FormControlLabel,
-  Typography
+  Typography,
+  TextField
 } from '@mui/material';
 import { useModelStore } from 'src/stores/modelStore';
 import {
@@ -46,6 +47,11 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
   });
   const [imageData, setImageData] = React.useState<string>();
   const [exportError, setExportError] = useState(false);
+  const [cropTransparent, setCropTransparent] = useState(true);
+  const [cropMargin, setCropMargin] = useState(() => {
+    const saved = localStorage.getItem('isoflow-export-crop-margin');
+    return saved ? parseInt(saved, 10) : 8; // デフォルト8px
+  });
   const { getUnprojectedBounds } = useDiagramUtils();
   const uiStateActions = useUiStateStore((state) => {
     return state.actions;
@@ -70,7 +76,7 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
 
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      exportAsImage(containerRef.current as HTMLDivElement)
+      exportAsImage(containerRef.current as HTMLDivElement, undefined, cropTransparent, cropMargin)
         .then((data) => {
           return setImageData(data);
         })
@@ -79,7 +85,7 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
           setExportError(true);
         });
     }, 2000);
-  }, []);
+  }, [cropTransparent, cropMargin]);
 
   const downloadFile = useCallback(() => {
     if (!imageData) return;
@@ -102,6 +108,16 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
     setTransparentBackground(checked);
   };
 
+  const handleCropTransparentChange = (checked: boolean) => {
+    setCropTransparent(checked);
+  };
+
+  const handleCropMarginChange = (value: number) => {
+    const clampedValue = Math.max(0, Math.min(100, value)); // 0-100の範囲で制限
+    setCropMargin(clampedValue);
+    localStorage.setItem('isoflow-export-crop-margin', clampedValue.toString());
+  };
+
   const [backgroundColor, setBackgroundColor] = useState<string>(
     customVars.customPalette.diagramBg
   );
@@ -111,7 +127,7 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
 
   useEffect(() => {
     setImageData(undefined);
-  }, [showGrid, backgroundColor, transparentBackground]);
+  }, [showGrid, backgroundColor, transparentBackground, cropTransparent, cropMargin]);
 
   return (
     <Dialog open onClose={onClose}>
@@ -235,6 +251,38 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
                     />
                   }
                 />
+                <FormControlLabel
+                  label="Crop transparent regions"
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={cropTransparent}
+                      onChange={(event) => {
+                        handleCropTransparentChange(event.target.checked);
+                      }}
+                    />
+                  }
+                />
+                {cropTransparent && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 4 }}>
+                    <Typography variant="caption">Margin:</Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={cropMargin}
+                      onChange={(event) => {
+                        const value = parseInt(event.target.value) || 0;
+                        handleCropMarginChange(value);
+                      }}
+                      inputProps={{
+                        min: 0,
+                        max: 100,
+                        style: { width: '60px' }
+                      }}
+                    />
+                    <Typography variant="caption">px</Typography>
+                  </Box>
+                )}
                 {!transparentBackground && (
                   <FormControlLabel
                     label="Background color"
