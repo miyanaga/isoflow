@@ -14,14 +14,11 @@ export const NonIsometricIcon = ({ icon, size = 1, flipHorizontal = false }: Pro
   const baseWidth = PROJECTED_TILE_SIZE.width * 0.7;
   const scaledWidth = baseWidth * size;
 
-  // アイソメトリックグリッドの中心から下の点までの距離
-  const gridCenterToBottom = PROJECTED_TILE_SIZE.height / 2;
-  // 倍率に応じてY軸方向にオフセット（2倍のときは1倍、3倍のときは2倍）
-  const yOffset = gridCenterToBottom * (size - 1);
-
-  // アイソメトリック投影を考慮した位置調整
+  // After isometric transformation, we need to adjust position to center the icon
+  // The icon should appear at the center of the grid diamond
+  // Move up by half grid height to center on the grid
   const offsetX = -scaledWidth / 2;
-  const offsetY = -PROJECTED_TILE_SIZE.height / 2 + yOffset;
+  const offsetY = -scaledWidth / 2 - PROJECTED_TILE_SIZE.height / 2;
 
   return (
     <Box sx={{ pointerEvents: 'none' }}>
@@ -30,7 +27,9 @@ export const NonIsometricIcon = ({ icon, size = 1, flipHorizontal = false }: Pro
           position: 'absolute',
           left: offsetX,
           top: offsetY,
-          transformOrigin: 'center bottom',
+          width: scaledWidth,
+          height: scaledWidth,
+          transformOrigin: 'center',
           transform: `${getIsoProjectionCss()}${flipHorizontal ? ' scaleX(-1)' : ''}`
         }}
       >
@@ -39,8 +38,8 @@ export const NonIsometricIcon = ({ icon, size = 1, flipHorizontal = false }: Pro
           src={icon.url}
           alt={`icon-${icon.id}`}
           sx={{
-            width: scaledWidth,
-            transformOrigin: 'center bottom'
+            width: '100%',
+            height: 'auto'
           }}
         />
       </Box>
