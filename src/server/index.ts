@@ -7,6 +7,7 @@ import * as dotenv from 'dotenv'
 import { DocumentManager } from './managers/DocumentManager'
 import { IconManager } from './managers/IconManager'
 import { PublishManager } from './managers/PublishManager'
+import { FreepikManager } from './managers/FreepikManager'
 
 // Load environment variables
 dotenv.config()
@@ -35,6 +36,7 @@ const publishManager = new PublishManager({
   sshBasePath: process.env.SSH_BASE_PATH,
   sshPublishUrl: process.env.SSH_PUBLISH_URL
 })
+const freepikManager = new FreepikManager(process.env.FREEPIK_API_KEY)
 
 async function initialize() {
   await documentManager.initialize()
@@ -248,6 +250,63 @@ app.post('/publish', asyncHandler(async (req: Request, res: Response) => {
     res.json(result)
   } catch (error: any) {
     console.error('Publish error:', error)
+    res.status(500).json({ error: error.message })
+  }
+}))
+
+app.get('/freepik/search', asyncHandler(async (req: Request, res: Response) => {
+  const { query, per_page, page, order, shape, thumbnail_size } = req.query
+
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' })
+  }
+
+  if (!freepikManager.isAvailable()) {
+    return res.status(503).json({ error: 'Freepik API not configured' })
+  }
+
+  try {
+    const options = {
+      per_page: per_page ? parseInt(String(per_page)) : undefined,
+      page: page ? parseInt(String(page)) : undefined,
+      order: order as any,
+      shape: shape as any,
+      thumbnail_size: thumbnail_size ? parseInt(String(thumbnail_size)) : undefined
+    }
+
+    const result = await freepikManager.searchIcons(String(query), options)
+    res.json(result)
+  } catch (error: any) {
+    console.error('Freepik search error:', error)
+    res.status(500).json({ error: error.message })
+  }
+}))
+
+app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => {
+  const { iconId, name, title } = req.body
+
+  if (!iconId || !name) {
+    return res.status(400).json({ error: 'Icon ID and name are required' })
+  }
+
+  if (!freepikManager.isAvailable()) {
+    return res.status(503).json({ error: 'Freepik API not configured' })
+  }
+
+  try {
+    // Download SVG from Freepik
+    const svgContent = await freepikManager.downloadIconAsString(iconId)
+
+    // Save to icons directory
+    await iconManager.save(name, svgContent)
+
+    res.json({
+      success: true,
+      name,
+      message: 'Icon downloaded successfully'
+    })
+  } catch (error: any) {
+    console.error('Icon download error:', error)
     res.status(500).json({ error: error.message })
   }
 }))

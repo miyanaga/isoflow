@@ -103,6 +103,12 @@ export const api = {
       apiRequest('/icons/sync', {
         params: lastUpdated ? { lastUpdated } : undefined,
       }),
+
+    download: (iconId: string, name: string, title?: string) =>
+      apiRequest<{ success: boolean; name: string; message: string }>('/icons/download', {
+        method: 'POST',
+        body: JSON.stringify({ iconId, name, title }),
+      }),
   },
 
   // Publish endpoints
@@ -130,6 +136,62 @@ export const api = {
       }
 
       return response.json() as Promise<{ url: string }>;
+    },
+  },
+
+  // Freepik endpoints
+  freepik: {
+    search: (query: string, options?: {
+      per_page?: number;
+      page?: number;
+      order?: 'relevance' | 'recent';
+      shape?: 'outline' | 'fill' | 'lineal-color' | 'hand-drawn';
+      thumbnail_size?: number;
+    }) => {
+      const params: Record<string, string> = { query };
+      if (options?.per_page) params.per_page = String(options.per_page);
+      if (options?.page) params.page = String(options.page);
+      if (options?.order) params.order = options.order;
+      if (options?.shape) params.shape = options.shape;
+      if (options?.thumbnail_size) params.thumbnail_size = String(options.thumbnail_size);
+
+      return apiRequest<{
+        data: Array<{
+          id: string;
+          name: string;
+          title: string;
+          thumbnails: Array<{
+            width: number;
+            height: number;
+            url: string;
+          }>;
+          author: {
+            id: string;
+            name: string;
+            username: string;
+          };
+          set?: {
+            id: string;
+            name: string;
+            slug: string;
+          };
+          family?: {
+            id: string;
+            name: string;
+          };
+          style?: string | { name: string };
+          tags: string[] | Array<{ name: string; slug: string }>;
+        }>;
+        meta: {
+          pagination: {
+            total: number;
+            count: number;
+            per_page: number;
+            current_page: number;
+            total_pages: number;
+          };
+        };
+      }>('/freepik/search', { params });
     },
   },
 };

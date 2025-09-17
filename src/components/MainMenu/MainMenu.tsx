@@ -14,7 +14,8 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Upload as UploadIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
@@ -256,6 +257,13 @@ export const MainMenu = () => {
 
           <MenuItem onClick={onUploadIcon} Icon={<UploadIcon />}>
             Upload Icon
+          </MenuItem>
+
+          <MenuItem onClick={() => {
+            uiStateActions.setDialog('FREEPIK_SEARCH');
+            uiStateActions.setIsMainMenuOpen(false);
+          }} Icon={<SearchIcon />}>
+            Search Freepik
           </MenuItem>
 
           <MenuItem onClick={() => {

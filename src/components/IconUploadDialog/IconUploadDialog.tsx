@@ -21,7 +21,10 @@ import { api, getIsoProjectionCss } from 'src/utils';
 import { PROJECTED_TILE_SIZE } from 'src/config';
 import { useModelStore } from 'src/stores/modelStore';
 import { useUiStateStore } from 'src/stores/uiStateStore';
+import { useScene } from 'src/hooks/useScene';
+import { useIconSync } from 'src/hooks/useIconSync';
 import { Icon } from 'src/types';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Props {
   open: boolean;
@@ -40,6 +43,8 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
   const [error, setError] = useState<string>('');
   const modelActions = useModelStore((state) => state.actions);
   const uiStateActions = useUiStateStore((state) => state.actions);
+  const scene = useScene();
+  const { triggerSync } = useIconSync();
 
   useEffect(() => {
     if (!open) {
@@ -115,57 +120,43 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
       // Upload icon
       await api.icons.save(iconName, modifiedSvg);
 
-      // Wait 200ms then trigger sync to get the new icon
+      // Sync icons with server
+      await triggerSync();
+
+      // Wait 500ms then place the icon as a node
       setTimeout(async () => {
         try {
-          // Force a full sync by passing null as lastUpdated
-          const response = await api.icons.sync(null) as any;
+          // Get the updated icons from model store
+          const currentState = modelActions.get();
+          const customIcon = currentState.icons.find(
+            (i: Icon) => i.collection === 'CUSTOM' && i.id === `custom_${iconName}`
+          );
 
-          if (response.data) {
-            // Convert server icons to Isoflow icons
-            const customIcons: Icon[] = response.data.map((iconData: any) => {
-              // Parse SVG to check if it has the isometric attribute
-              let isIsometric = false;
-              try {
-                const parser = new DOMParser();
-                const svgDoc = parser.parseFromString(iconData.svg, 'image/svg+xml');
-                const svgElement = svgDoc.querySelector('svg');
-                if (svgElement) {
-                  isIsometric = svgElement.getAttribute('data-isometric') === 'true';
-                }
-              } catch (error) {
-                console.error('Error parsing SVG:', error);
-              }
+          if (customIcon) {
+            // Get center position
+            const centerTile = { x: 0, y: 0 };
+            const modelItemId = uuidv4();
 
-              // Convert UTF-8 string to base64
-              const base64 = btoa(unescape(encodeURIComponent(iconData.svg)));
-
-              return {
-                id: `custom_${iconData.name}`,
-                name: iconData.name,
-                url: `data:image/svg+xml;base64,${base64}`,
-                collection: 'CUSTOM',
-                isIsometric
-              };
+            // Create model item
+            scene.createModelItem({
+              id: modelItemId,
+              name: iconName,
+              icon: customIcon.id
             });
 
-            // Get current icons and filter out existing CUSTOM icons
-            const currentState = modelActions.get();
-            const nonCustomIcons = currentState.icons.filter(
-              (icon: Icon) => icon.collection !== 'CUSTOM'
-            );
+            // Create view item
+            scene.createViewItem({
+              id: modelItemId,
+              tile: centerTile,
+              size: 1
+            });
 
-            // Combine with new CUSTOM icons
-            const updatedIcons = [...nonCustomIcons, ...customIcons];
-
-            // Update the store
-            modelActions.setIcons(updatedIcons);
-            console.log('Icon uploaded and synced immediately');
+            console.log('Icon uploaded and placed on canvas');
           }
         } catch (error) {
-          console.error('Error triggering sync after upload:', error);
+          console.error('Error placing icon after upload:', error);
         }
-      }, 200);
+      }, 500);
 
       // Success - close dialog
       onClose();

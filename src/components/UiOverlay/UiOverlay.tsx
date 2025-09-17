@@ -20,6 +20,7 @@ import { EditViewsDialog } from '../EditViewsDialog/EditViewsDialog';
 import { IconUploadDialog } from '../IconUploadDialog/IconUploadDialog';
 import { PublishDialog } from '../PublishDialog/PublishDialog';
 import { IconManagementDialog } from '../IconManagementDialog/IconManagementDialog';
+import { FreepikDialog } from '../FreepikDialog/FreepikDialog';
 
 const ToolsEnum = {
   MAIN_MENU: 'MAIN_MENU',
@@ -346,6 +347,14 @@ export const UiOverlay = () => {
 
       {dialog === 'ICON_MANAGEMENT' && (
         <IconManagementDialog
+          onClose={() => {
+            return uiStateActions.setDialog(null);
+          }}
+        />
+      )}
+
+      {dialog === 'FREEPIK_SEARCH' && (
+        <FreepikDialog
           onClose={() => {
             return uiStateActions.setDialog(null);
           }}
