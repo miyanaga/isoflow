@@ -3,6 +3,9 @@ const HtmlWebPackPlugin = require('html-webpack-plugin');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const webpack = require('webpack');
 
+// Get API_URL from environment variable
+const API_URL = process.env.API_URL || 'http://localhost:3080';
+
 module.exports = {
   mode: 'development',
   entry: './src/index.tsx',
@@ -20,7 +23,19 @@ module.exports = {
       '.csb.app', // So Codesandbox.io can run the dev server
       '.ngrok-free.app'
     ],
-    port: 3000
+    port: 3000,
+    proxy: [
+      {
+        context: ['/api'],
+        target: API_URL,
+        pathRewrite: { '^/api': '' },
+        changeOrigin: true,
+        ws: true, // Enable WebSocket proxying
+        onProxyReq: (proxyReq, req, res) => {
+          console.log(`Proxying ${req.method} ${req.url} to ${API_URL}`);
+        }
+      }
+    ]
   },
   module: {
     rules: [

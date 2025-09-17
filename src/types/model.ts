@@ -46,5 +46,6 @@ export type ModelStore = Model & {
     deleteView: (viewId: string) => boolean;
     updateView: (viewId: string, updates: Partial<View>) => void;
     reorderViews: (views: View[]) => void;
+    setIcons: (icons: Icon[]) => void;
   };
 };

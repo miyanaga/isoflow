@@ -12,6 +12,7 @@ import { UiOverlay } from 'src/components/UiOverlay/UiOverlay';
 import { UiStateProvider, useUiStateStore } from 'src/stores/uiStateStore';
 import { INITIAL_DATA, MAIN_MENU_OPTIONS } from 'src/config';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
+import { useIconSync } from 'src/hooks/useIconSync';
 
 const App = ({
   initialData,
@@ -32,6 +33,9 @@ const App = ({
   });
 
   const { load } = initialDataManager;
+
+  // Initialize icon sync with WebSocket
+  useIconSync();
 
   useEffect(() => {
     load({ ...INITIAL_DATA, ...initialData });

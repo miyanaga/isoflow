@@ -49,7 +49,16 @@ export const toPx = (value: number | string) => {
 export const categoriseIcons = (icons: Icon[]) => {
   const categories: { name?: string; icons: Icon[] }[] = [];
 
+  // Always add CUSTOM group first
+  categories.push({ name: 'CUSTOM', icons: [] });
+
   icons.forEach((icon) => {
+    // Skip finding collection for CUSTOM group, as it's always at index 0
+    if (icon.collection === 'CUSTOM') {
+      categories[0].icons.push(icon);
+      return;
+    }
+
     const collection = categories.find((cat) => {
       return cat.name === icon.collection;
     });

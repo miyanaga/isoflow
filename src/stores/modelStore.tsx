@@ -47,6 +47,9 @@ const initialState = () => {
         },
         reorderViews: (views: View[]) => {
           set({ views });
+        },
+        setIcons: (icons: typeof INITIAL_DATA.icons) => {
+          set({ icons });
         }
       }
     };

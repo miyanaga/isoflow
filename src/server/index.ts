@@ -2,17 +2,21 @@ import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import { json, urlencoded } from 'body-parser'
 import * as path from 'path'
+import * as http from 'http'
+import * as WebSocket from 'ws'
 import { DocumentManager } from './managers/DocumentManager'
 import { IconManager } from './managers/IconManager'
 
 const app = express()
+const server = http.createServer(app)
+const wss = new WebSocket.Server({ server, path: '/icons/sync' })
 
 app.use(cors())
 app.use(json({ limit: '10mb' }))
 app.use(urlencoded({ extended: true, limit: '10mb' }))
 
-const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3080/'
-const url = new URL(SERVER_URL)
+const API_URL = process.env.API_URL || 'http://localhost:3080'
+const url = new URL(API_URL)
 const PORT = parseInt(url.port) || 3080
 const DATA_DIR = process.env.DATA_DIR || './data'
 
@@ -22,6 +26,45 @@ const iconManager = new IconManager(DATA_DIR)
 async function initialize() {
   await documentManager.initialize()
   await iconManager.initialize()
+
+  // Setup WebSocket connections
+  wss.on('connection', (ws: WebSocket) => {
+    console.log('WebSocket client connected for icon sync')
+
+    // Send initial sync
+    iconManager.sync().then(icons => {
+      ws.send(JSON.stringify({
+        type: 'sync',
+        data: icons
+      }))
+    }).catch(error => {
+      console.error('Error syncing icons:', error)
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: error.message
+      }))
+    })
+
+    // Setup file watcher
+    const unsubscribe = iconManager.watchIcons((icons) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'sync',
+          data: icons
+        }))
+      }
+    })
+
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected')
+      unsubscribe()
+    })
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error)
+      unsubscribe()
+    })
+  })
 }
 
 const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
@@ -177,16 +220,19 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
 async function startServer() {
   try {
     await initialize()
-    const server = app.listen(PORT, () => {
-      console.log(`Server running at ${SERVER_URL}`)
+    server.listen(PORT, () => {
+      console.log(`Server running at ${API_URL}`)
+      console.log(`WebSocket endpoint: ws://localhost:${PORT}/icons/sync`)
       console.log(`Data directory: ${path.resolve(DATA_DIR)}`)
     })
 
     // Keep the process alive
     process.on('SIGINT', () => {
       console.log('\nShutting down server...')
-      server.close(() => {
-        process.exit(0)
+      wss.close(() => {
+        server.close(() => {
+          process.exit(0)
+        })
       })
     })
   } catch (error) {

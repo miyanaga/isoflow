@@ -1,9 +1,11 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import * as chokidar from 'chokidar'
 import { IconInfo, IconData, IconManagerInterface } from '../interfaces/IconManagerInterface'
 
 export class IconManager implements IconManagerInterface {
   private iconsDir: string
+  private watcher?: chokidar.FSWatcher
 
   constructor(dataDir: string) {
     this.iconsDir = path.join(dataDir, 'icons')
@@ -89,5 +91,36 @@ export class IconManager implements IconManagerInterface {
     )
 
     return icons.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+  }
+
+  watchIcons(callback: (icons: IconData[]) => void): () => void {
+    // Initialize watcher with absolute path pattern
+    const watchPath = path.join(this.iconsDir, '*.svg')
+    this.watcher = chokidar.watch(watchPath, {
+      ignoreInitial: true,
+      persistent: true,
+      depth: 0
+    })
+
+    const triggerSync = async () => {
+      try {
+        const icons = await this.sync()
+        callback(icons)
+      } catch (error) {
+        console.error('Error syncing icons:', error)
+      }
+    }
+
+    this.watcher
+      .on('add', triggerSync)
+      .on('change', triggerSync)
+      .on('unlink', triggerSync)
+
+    // Return cleanup function
+    return () => {
+      if (this.watcher) {
+        this.watcher.close()
+      }
+    }
   }
 }
