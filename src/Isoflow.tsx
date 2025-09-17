@@ -12,7 +12,6 @@ import { UiOverlay } from 'src/components/UiOverlay/UiOverlay';
 import { UiStateProvider, useUiStateStore } from 'src/stores/uiStateStore';
 import { INITIAL_DATA, MAIN_MENU_OPTIONS } from 'src/config';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
-import { useAutoSave } from 'src/hooks/useAutoSave';
 
 const App = ({
   initialData,
@@ -31,20 +30,11 @@ const App = ({
   const model = useModelStore((state) => {
     return modelFromModelStore(state);
   });
-  const modelActions = useModelStore((state) => state.actions);
-  const { restoreFromLocalStorage } = useAutoSave();
 
   const { load } = initialDataManager;
 
   useEffect(() => {
-    // Try to restore from localStorage first
-    const savedData = restoreFromLocalStorage();
-    if (savedData && !initialData) {
-      load(savedData.model);
-      modelActions.setDocumentName(savedData.documentName);
-    } else {
-      load({ ...INITIAL_DATA, ...initialData });
-    }
+    load({ ...INITIAL_DATA, ...initialData });
   }, []);
 
   // Force zoom to 40% when initial data manager is ready
