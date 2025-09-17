@@ -3,13 +3,11 @@ import cors from 'cors'
 import { json, urlencoded } from 'body-parser'
 import * as path from 'path'
 import * as http from 'http'
-import * as WebSocket from 'ws'
 import { DocumentManager } from './managers/DocumentManager'
 import { IconManager } from './managers/IconManager'
 
 const app = express()
 const server = http.createServer(app)
-const wss = new WebSocket.Server({ server, path: '/icons/sync' })
 
 app.use(cors())
 app.use(json({ limit: '10mb' }))
@@ -26,46 +24,6 @@ const iconManager = new IconManager(DATA_DIR)
 async function initialize() {
   await documentManager.initialize()
   await iconManager.initialize()
-
-  // Set up a single shared file watcher
-  iconManager.watchIcons((icons) => {
-    // Broadcast to all connected WebSocket clients
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'sync',
-          data: icons
-        }))
-      }
-    })
-  })
-
-  // Setup WebSocket connections
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('WebSocket client connected for icon sync')
-
-    // Send initial sync
-    iconManager.sync().then(icons => {
-      ws.send(JSON.stringify({
-        type: 'sync',
-        data: icons
-      }))
-    }).catch(error => {
-      console.error('Error syncing icons:', error)
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: error.message
-      }))
-    })
-
-    ws.on('close', () => {
-      console.log('WebSocket client disconnected')
-    })
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error)
-    })
-  })
 }
 
 const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
@@ -205,9 +163,11 @@ app.get('/icons/index', asyncHandler(async (req: Request, res: Response) => {
 }))
 
 app.get('/icons/sync', asyncHandler(async (req: Request, res: Response) => {
+  const { lastUpdated } = req.query
+
   try {
-    const icons = await iconManager.sync()
-    res.json(icons)
+    const result = await iconManager.syncWithTimestamp(lastUpdated ? String(lastUpdated) : undefined)
+    res.json(result)
   } catch (error: any) {
     res.status(500).json({ error: error.message })
   }
@@ -223,17 +183,15 @@ async function startServer() {
     await initialize()
     server.listen(PORT, () => {
       console.log(`Server running at ${API_URL}`)
-      console.log(`WebSocket endpoint: ws://localhost:${PORT}/icons/sync`)
+      console.log(`Icons sync endpoint: GET /icons/sync`)
       console.log(`Data directory: ${path.resolve(DATA_DIR)}`)
     })
 
     // Keep the process alive
     process.on('SIGINT', () => {
       console.log('\nShutting down server...')
-      wss.close(() => {
-        server.close(() => {
-          process.exit(0)
-        })
+      server.close(() => {
+        process.exit(0)
       })
     })
   } catch (error) {

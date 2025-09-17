@@ -1,14 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useModelStore } from 'src/stores/modelStore';
 import { Icon } from 'src/types';
-import { generateId } from 'src/utils';
-
-// Use relative WebSocket URL through the proxy
-const getWebSocketUrl = () => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host;
-  return `${protocol}//${host}/api/icons/sync`;
-};
+import { api } from 'src/utils';
 
 interface IconData {
   name: string;
@@ -16,115 +9,109 @@ interface IconData {
   updatedAt: string;
 }
 
-interface SyncMessage {
-  type: 'sync' | 'error';
+interface SyncResponse {
+  lastUpdated: string | null;
   data?: IconData[];
-  message?: string;
 }
 
 export const useIconSync = () => {
-  const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
   const modelActions = useModelStore((state) => state.actions);
-  const isConnecting = useRef(false);
+  const lastUpdatedRef = useRef<string | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const connectWebSocket = () => {
-    if (isConnecting.current || (ws.current && ws.current.readyState === WebSocket.OPEN)) {
-      return;
-    }
+  const syncIcons = useCallback(async () => {
+    try {
+      const response = await api.icons.sync(lastUpdatedRef.current);
+      const syncData = response as SyncResponse;
 
-    isConnecting.current = true;
-    const wsUrl = getWebSocketUrl();
-    console.log('Connecting to icon sync WebSocket:', wsUrl);
+      // If server has no icons
+      if (syncData.lastUpdated === null) {
+        // Clear CUSTOM icons
+        const currentState = modelActions.get();
+        const nonCustomIcons = currentState.icons.filter(
+          (icon: Icon) => icon.collection !== 'CUSTOM'
+        );
+        modelActions.setIcons(nonCustomIcons);
+        lastUpdatedRef.current = null;
+        return;
+      }
 
-    ws.current = new WebSocket(wsUrl);
+      // If timestamps match, no update needed
+      if (syncData.lastUpdated === lastUpdatedRef.current) {
+        return;
+      }
 
-    ws.current.onopen = () => {
-      console.log('Connected to icon sync WebSocket');
-      isConnecting.current = false;
-    };
+      // Update with new data
+      if (syncData.data) {
+        console.log(`Syncing ${syncData.data.length} CUSTOM icons`);
 
-    ws.current.onmessage = (event) => {
-      try {
-        const message: SyncMessage = JSON.parse(event.data);
-
-        if (message.type === 'sync' && message.data) {
-          console.log(`Syncing ${message.data.length} CUSTOM icons`);
-
-          // Convert server icons to Isoflow icons
-          const customIcons: Icon[] = message.data.map(iconData => {
-            // Parse SVG to check if it has the isometric attribute
-            let isIsometric = false;
-            try {
-              const parser = new DOMParser();
-              const svgDoc = parser.parseFromString(iconData.svg, 'image/svg+xml');
-              const svgElement = svgDoc.querySelector('svg');
-              if (svgElement) {
-                isIsometric = svgElement.getAttribute('data-isometric') === 'true';
-              }
-            } catch (error) {
-              console.error('Error parsing SVG:', error);
+        // Convert server icons to Isoflow icons
+        const customIcons: Icon[] = syncData.data.map(iconData => {
+          // Parse SVG to check if it has the isometric attribute
+          let isIsometric = false;
+          try {
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(iconData.svg, 'image/svg+xml');
+            const svgElement = svgDoc.querySelector('svg');
+            if (svgElement) {
+              isIsometric = svgElement.getAttribute('data-isometric') === 'true';
             }
+          } catch (error) {
+            console.error('Error parsing SVG:', error);
+          }
 
-            return {
-              id: `custom_${iconData.name}`,
-              name: iconData.name,
-              url: `data:image/svg+xml;base64,${btoa(iconData.svg)}`,
-              collection: 'CUSTOM',
-              isIsometric
-            };
-          });
+          // Convert UTF-8 string to base64
+          const base64 = btoa(unescape(encodeURIComponent(iconData.svg)));
 
-          // Get current icons and filter out existing CUSTOM icons
-          const currentState = modelActions.get();
-          const currentIcons = currentState.icons.filter(
-            (icon: Icon) => icon.collection !== 'CUSTOM'
-          );
+          return {
+            id: `custom_${iconData.name}`,
+            name: iconData.name,
+            url: `data:image/svg+xml;base64,${base64}`,
+            collection: 'CUSTOM',
+            isIsometric
+          };
+        });
 
-          // Combine with new CUSTOM icons
-          const updatedIcons = [...currentIcons, ...customIcons];
+        // Get current icons and filter out existing CUSTOM icons
+        const currentState = modelActions.get();
+        const nonCustomIcons = currentState.icons.filter(
+          (icon: Icon) => icon.collection !== 'CUSTOM'
+        );
 
-          // Update the store
-          modelActions.setIcons(updatedIcons);
-        } else if (message.type === 'error') {
-          console.error('Icon sync error:', message.message);
-        }
-      } catch (error) {
-        console.error('Error processing sync message:', error);
+        // Combine with new CUSTOM icons
+        const updatedIcons = [...nonCustomIcons, ...customIcons];
+
+        // Update the store
+        modelActions.setIcons(updatedIcons);
+        lastUpdatedRef.current = syncData.lastUpdated;
       }
-    };
+    } catch (error) {
+      console.error('Error syncing icons:', error);
+    }
+  }, [modelActions]);
 
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      isConnecting.current = false;
-    };
-
-    ws.current.onclose = () => {
-      console.log('WebSocket connection closed');
-      isConnecting.current = false;
-      ws.current = null;
-
-      // Reconnect after 3 seconds
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-      }
-      reconnectTimeout.current = setTimeout(() => {
-        console.log('Attempting to reconnect...');
-        connectWebSocket();
-      }, 3000);
-    };
-  };
+  // Manual sync trigger for after upload
+  const triggerSync = useCallback(async () => {
+    // Reset timestamp to force full sync
+    lastUpdatedRef.current = null;
+    await syncIcons();
+  }, [syncIcons]);
 
   useEffect(() => {
-    connectWebSocket();
+    // Initial sync
+    syncIcons();
+
+    // Set up polling interval (10 seconds)
+    const interval = setInterval(syncIcons, 10000);
+    intervalRef.current = interval;
 
     return () => {
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-      }
-      if (ws.current) {
-        ws.current.close();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
-  }, []);
+  }, [syncIcons]);
+
+  // Export triggerSync so it can be called from other components
+  return { triggerSync };
 };

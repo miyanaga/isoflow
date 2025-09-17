@@ -1,11 +1,9 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import * as chokidar from 'chokidar'
 import { IconInfo, IconData, IconManagerInterface } from '../interfaces/IconManagerInterface'
 
 export class IconManager implements IconManagerInterface {
   private iconsDir: string
-  private watcher?: chokidar.FSWatcher
 
   constructor(dataDir: string) {
     this.iconsDir = path.join(dataDir, 'icons')
@@ -93,38 +91,46 @@ export class IconManager implements IconManagerInterface {
     return icons.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
   }
 
-  watchIcons(callback: (icons: IconData[]) => void): () => void {
-    // Initialize watcher with absolute path pattern
-    const watchPath = path.join(this.iconsDir, '*.svg')
-    this.watcher = chokidar.watch(watchPath, {
-      ignoreInitial: true,
-      persistent: true,
-      depth: 0,
-      awaitWriteFinish: {
-        stabilityThreshold: 100,
-        pollInterval: 100
-      }
-    })
+  async getLastModified(): Promise<string | null> {
+    try {
+      const files = await fs.readdir(this.iconsDir)
+      const svgFiles = files.filter(file => file.endsWith('.svg'))
 
-    const triggerSync = async () => {
-      try {
-        const icons = await this.sync()
-        callback(icons)
-      } catch (error) {
-        console.error('Error syncing icons:', error)
+      if (svgFiles.length === 0) {
+        return null
       }
-    }
 
-    this.watcher
-      .on('add', triggerSync)
-      .on('change', triggerSync)
-      .on('unlink', triggerSync)
+      const stats = await Promise.all(
+        svgFiles.map(async file => {
+          const filePath = path.join(this.iconsDir, file)
+          const stat = await fs.stat(filePath)
+          return stat.mtime.getTime()
+        })
+      )
 
-    // Return cleanup function
-    return () => {
-      if (this.watcher) {
-        this.watcher.close()
-      }
+      return new Date(Math.max(...stats)).toISOString()
+    } catch {
+      return null
     }
   }
+
+  async syncWithTimestamp(clientLastUpdated?: string): Promise<{ lastUpdated: string | null; data?: IconData[] }> {
+    const serverLastUpdated = await this.getLastModified()
+
+    // If no icons exist on server
+    if (!serverLastUpdated) {
+      return { lastUpdated: null, data: [] }
+    }
+
+    // If client has same timestamp as server, return empty
+    if (clientLastUpdated === serverLastUpdated) {
+      return { lastUpdated: serverLastUpdated }
+    }
+
+    // Otherwise return full data
+    const data = await this.sync()
+    return { lastUpdated: serverLastUpdated, data }
+  }
+
+  // Removed watchIcons method as we're using polling instead
 }

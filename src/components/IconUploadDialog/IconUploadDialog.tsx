@@ -19,6 +19,8 @@ import {
 import { CloudUpload as UploadIcon } from '@mui/icons-material';
 import { api, getIsoProjectionCss } from 'src/utils';
 import { PROJECTED_TILE_SIZE } from 'src/config';
+import { useModelStore } from 'src/stores/modelStore';
+import { Icon } from 'src/types';
 
 interface Props {
   open: boolean;
@@ -35,6 +37,7 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
   const [iconType, setIconType] = useState<IconType>('flat');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>('');
+  const modelActions = useModelStore((state) => state.actions);
 
   useEffect(() => {
     if (!open) {
@@ -110,8 +113,57 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
       // Upload icon
       await api.icons.save(iconName, modifiedSvg);
 
-      // Trigger file watcher by touching the file (WebSocket will sync)
-      // The server's file watcher will detect the change and broadcast via WebSocket
+      // Wait 200ms then trigger sync to get the new icon
+      setTimeout(async () => {
+        try {
+          // Force a full sync by passing null as lastUpdated
+          const response = await api.icons.sync(null) as any;
+
+          if (response.data) {
+            // Convert server icons to Isoflow icons
+            const customIcons: Icon[] = response.data.map((iconData: any) => {
+              // Parse SVG to check if it has the isometric attribute
+              let isIsometric = false;
+              try {
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(iconData.svg, 'image/svg+xml');
+                const svgElement = svgDoc.querySelector('svg');
+                if (svgElement) {
+                  isIsometric = svgElement.getAttribute('data-isometric') === 'true';
+                }
+              } catch (error) {
+                console.error('Error parsing SVG:', error);
+              }
+
+              // Convert UTF-8 string to base64
+              const base64 = btoa(unescape(encodeURIComponent(iconData.svg)));
+
+              return {
+                id: `custom_${iconData.name}`,
+                name: iconData.name,
+                url: `data:image/svg+xml;base64,${base64}`,
+                collection: 'CUSTOM',
+                isIsometric
+              };
+            });
+
+            // Get current icons and filter out existing CUSTOM icons
+            const currentState = modelActions.get();
+            const nonCustomIcons = currentState.icons.filter(
+              (icon: Icon) => icon.collection !== 'CUSTOM'
+            );
+
+            // Combine with new CUSTOM icons
+            const updatedIcons = [...nonCustomIcons, ...customIcons];
+
+            // Update the store
+            modelActions.setIcons(updatedIcons);
+            console.log('Icon uploaded and synced immediately');
+          }
+        } catch (error) {
+          console.error('Error triggering sync after upload:', error);
+        }
+      }, 200);
 
       // Success - close dialog
       onClose();
@@ -144,7 +196,7 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
             overflow: 'hidden'
           }}
         >
-          {/* Isometric Grid background - exactly matching canvas grid */}
+          {/* Isometric Grid background - matching isoflow canvas exactly */}
           <svg
             style={{
               position: 'absolute',
@@ -164,18 +216,22 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
                 height={tileHeight * 2}
                 patternUnits="userSpaceOnUse"
               >
-                {/* Center diamond */}
+                {/* Main diamond shape matching grid-tile-bg.svg */}
                 <polygon
-                  points={`${tileWidth/2} ${tileHeight} ${tileWidth} ${tileHeight*2} ${tileWidth/2} ${tileHeight*3} 0 ${tileHeight*2}`}
+                  points={`${tileWidth/2} ${tileHeight*0.5} ${tileWidth} ${tileHeight} ${tileWidth/2} ${tileHeight*1.5} 0 ${tileHeight}`}
                   fill="none"
                   stroke="#000000"
                   strokeOpacity="0.15"
                   strokeWidth="1"
                 />
-                {/* Top lines */}
-                <line x1={tileWidth/2} y1={tileHeight} x2={tileWidth} y2={0}
+                {/* Diagonal lines from corners */}
+                <line x1={tileWidth/2} y1={tileHeight*0.5} x2={tileWidth} y2={0}
                   stroke="#000000" strokeOpacity="0.15" strokeWidth="1" />
-                <line x1={0} y1={0} x2={tileWidth/2} y2={tileHeight}
+                <line x1={0} y1={0} x2={tileWidth/2} y2={tileHeight*0.5}
+                  stroke="#000000" strokeOpacity="0.15" strokeWidth="1" />
+                <line x1={tileWidth/2} y1={tileHeight*1.5} x2={0} y2={tileHeight*2}
+                  stroke="#000000" strokeOpacity="0.15" strokeWidth="1" />
+                <line x1={tileWidth} y1={tileHeight*2} x2={tileWidth/2} y2={tileHeight*1.5}
                   stroke="#000000" strokeOpacity="0.15" strokeWidth="1" />
               </pattern>
             </defs>
@@ -199,7 +255,7 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
             {/* Icon with transformation */}
             <div
               style={{
-                transform: isIsometric ? 'none' : getIsoProjectionCss('Y'),
+                transform: isIsometric ? 'none' : `${getIsoProjectionCss()} scaleX(-1)`,
                 transformOrigin: 'center center',
                 width: '100%',
                 height: '100%',

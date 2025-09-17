@@ -99,7 +99,9 @@ export const api = {
         params: query ? { q: query } : undefined,
       }),
 
-    sync: () =>
-      apiRequest('/icons/sync'),
+    sync: (lastUpdated?: string | null) =>
+      apiRequest('/icons/sync', {
+        params: lastUpdated ? { lastUpdated } : undefined,
+      }),
   },
 };
