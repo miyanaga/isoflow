@@ -44,7 +44,7 @@ export const exportAsJSON = (model: Model) => {
   downloadFile(data, generateGenericFilename('json'));
 };
 
-const cropTransparentRegionsFromDataURL = async (dataUrl: string, margin: number = 0, targetWidth?: number): Promise<string> => {
+const cropTransparentRegionsFromDataURL = async (dataUrl: string, margin: number = 0): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -91,17 +91,8 @@ const cropTransparentRegionsFromDataURL = async (dataUrl: string, margin: number
       // マージンを適用した新しいキャンバスを作成
       const croppedWidth = maxX - minX + 1;
       const croppedHeight = maxY - minY + 1;
-      let finalWidth = croppedWidth + margin * 2;
-      let finalHeight = croppedHeight + margin * 2;
-
-      // targetWidthが指定されている場合、スケーリングを計算
-      let scale = 1;
-      if (targetWidth && targetWidth > 0) {
-        const widthWithoutMargin = targetWidth - (margin * 2);
-        scale = widthWithoutMargin / croppedWidth;
-        finalWidth = targetWidth;
-        finalHeight = Math.round((croppedHeight * scale) + (margin * 2));
-      }
+      const finalWidth = croppedWidth + margin * 2;
+      const finalHeight = croppedHeight + margin * 2;
 
       const croppedCanvas = document.createElement('canvas');
       croppedCanvas.width = finalWidth;
@@ -120,20 +111,12 @@ const cropTransparentRegionsFromDataURL = async (dataUrl: string, margin: number
       croppedCtx.imageSmoothingEnabled = true;
       croppedCtx.imageSmoothingQuality = 'high';
 
-      // クロップした領域をマージン分オフセットしてスケーリングして描画
-      if (targetWidth) {
-        croppedCtx.drawImage(
-          canvas,
-          minX, minY, croppedWidth, croppedHeight,
-          margin, margin, croppedWidth * scale, croppedHeight * scale
-        );
-      } else {
-        croppedCtx.drawImage(
-          canvas,
-          minX, minY, croppedWidth, croppedHeight,
-          margin, margin, croppedWidth, croppedHeight
-        );
-      }
+      // クロップした領域をマージン分オフセットして描画
+      croppedCtx.drawImage(
+        canvas,
+        minX, minY, croppedWidth, croppedHeight,
+        margin, margin, croppedWidth, croppedHeight
+      );
 
       // クロップしたキャンバスをdata URLに変換
       resolve(croppedCanvas.toDataURL('image/png'));
@@ -142,7 +125,7 @@ const cropTransparentRegionsFromDataURL = async (dataUrl: string, margin: number
   });
 };
 
-export const exportAsImage = async (el: HTMLDivElement, size?: Size, cropTransparent: boolean = true, margin: number = 0, targetWidth?: number) => {
+export const exportAsImage = async (el: HTMLDivElement, size?: Size, cropTransparent: boolean = true, margin: number = 0) => {
   // まずdom-to-imageでPNGデータURLを取得
   const imageData = await domtoimage.toPng(el, {
     ...size,
@@ -150,8 +133,8 @@ export const exportAsImage = async (el: HTMLDivElement, size?: Size, cropTranspa
   });
 
   if (cropTransparent) {
-    // 透明領域をクロップ（マージン付き、幅指定あり）
-    return await cropTransparentRegionsFromDataURL(imageData, margin, targetWidth);
+    // 透明領域をクロップ（マージン付き）
+    return await cropTransparentRegionsFromDataURL(imageData, margin);
   } else {
     // crop無しでそのまま返す
     return imageData;

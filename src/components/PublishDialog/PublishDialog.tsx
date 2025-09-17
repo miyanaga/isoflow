@@ -87,16 +87,9 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
     const saved = localStorage.getItem('isoflow-export-crop-margin');
     return saved ? parseInt(saved, 10) : 8;
   });
-  const [exportWidth, setExportWidth] = useState(() => {
-    const saved = localStorage.getItem('isoflow-export-width');
-    return saved ? parseInt(saved, 10) : 800;
-  });
-
   const [publishPath, setPublishPath] = useState(() =>
     generateDefaultPath(title, viewName)
   );
-
-  const [calculatedQuality, setCalculatedQuality] = useState(quality);
   const { getUnprojectedBounds } = useDiagramUtils();
   const uiStateActions = useUiStateStore((state) => state.actions);
 
@@ -140,35 +133,6 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
     });
   }, []);
 
-  // Calculate cropped bounds for quality
-  useEffect(() => {
-    if (cropTransparent && exportWidth > 0 && unprojectedBounds) {
-      const calculateCroppedBounds = async () => {
-        if (!containerRef.current) return;
-
-        try {
-          const tempData = await exportAsImage(containerRef.current, undefined, true, 0);
-          const img = new Image();
-          img.onload = () => {
-            const aspectRatio = img.height / img.width;
-            const targetWidthWithoutMargin = exportWidth - (cropMargin * 2);
-            const targetHeight = targetWidthWithoutMargin * aspectRatio;
-
-            const requiredQuality = targetWidthWithoutMargin / (unprojectedBounds.width);
-
-            setCalculatedQuality(Math.max(1, requiredQuality));
-          };
-          img.src = tempData;
-        } catch (err) {
-          console.error('Error calculating bounds:', err);
-        }
-      };
-
-      calculateCroppedBounds();
-    } else {
-      setCalculatedQuality(quality);
-    }
-  }, [cropTransparent, exportWidth, cropMargin, unprojectedBounds, quality]);
 
   // Set interaction mode
   useEffect(() => {
@@ -187,26 +151,24 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const targetWidth = cropTransparent ? exportWidth : undefined;
         const data = await exportAsImage(
           containerRef.current!,
           undefined,
           cropTransparent,
-          cropMargin,
-          targetWidth
+          cropMargin
         );
         setImageData(data);
       } catch (e) {
         setExportError(true);
       }
     }, 2000);
-  }, [cropTransparent, cropMargin, exportWidth]);
+  }, [cropTransparent, cropMargin]);
 
   // Re-export when settings change
   useEffect(() => {
     setImageData(undefined);
     calculateExport();
-  }, [transparentBackground, backgroundColor, cropTransparent, cropMargin, exportWidth, calculateExport]);
+  }, [transparentBackground, backgroundColor, cropTransparent, cropMargin, calculateExport]);
 
   const handlePublish = useCallback(async () => {
     if (!imageData) return;
@@ -240,13 +202,6 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
     localStorage.setItem('isoflow-export-crop-margin', String(value));
   }, []);
 
-  const handleWidthChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    if (isNaN(value) || value < 100) return;
-
-    setExportWidth(value);
-    localStorage.setItem('isoflow-export-width', String(value));
-  }, []);
 
   const handleTextFieldClick = useCallback((field: string, text: string, event: React.MouseEvent<HTMLInputElement>) => {
     const target = event.target as HTMLInputElement;
@@ -320,8 +275,8 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
                         left: 0
                       }}
                       style={{
-                        width: unprojectedBounds.width * calculatedQuality,
-                        height: unprojectedBounds.height * calculatedQuality
+                        width: unprojectedBounds.width * quality,
+                        height: unprojectedBounds.height * quality
                       }}
                     >
                       <Isoflow
@@ -346,6 +301,7 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
                   <Box
                     sx={{
                       width: '100%',
+                      height: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
@@ -355,7 +311,9 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
                       src={imageData}
                       alt="Export preview"
                       style={{
-                        width: '100%',
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        width: 'auto',
                         height: 'auto',
                         display: 'block'
                       }}
@@ -414,25 +372,14 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
                 />
 
                 {cropTransparent && (
-                  <>
-                    <TextField
-                      label="Margin (px)"
-                      type="number"
-                      value={cropMargin}
-                      onChange={handleMarginChange}
-                      size="small"
-                      fullWidth
-                    />
-                    <TextField
-                      label="Width (px)"
-                      type="number"
-                      value={exportWidth}
-                      onChange={handleWidthChange}
-                      size="small"
-                      fullWidth
-                      helperText="Target width after cropping"
-                    />
-                  </>
+                  <TextField
+                    label="Margin (px)"
+                    type="number"
+                    value={cropMargin}
+                    onChange={handleMarginChange}
+                    size="small"
+                    fullWidth
+                  />
                 )}
 
                 <Typography variant="subtitle2" sx={{ mt: 2 }}>
@@ -503,7 +450,7 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
           </Stack>
 
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button onClick={onClose}>Cancel</Button>
+            <Button variant="text" onClick={onClose}>Cancel</Button>
             <Button
               variant="contained"
               onClick={handlePublish}
