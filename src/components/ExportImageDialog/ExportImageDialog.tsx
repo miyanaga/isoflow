@@ -228,7 +228,8 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
                     }}
                     renderer={{
                       showGrid,
-                      backgroundColor: transparentBackground ? 'transparent' : backgroundColor
+                      backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
+                      forceZoom: 1.0
                     }}
                   />
                 </Box>

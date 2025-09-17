@@ -334,7 +334,8 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
                         }}
                         renderer={{
                           showGrid: false,
-                          backgroundColor: transparentBackground ? 'transparent' : backgroundColor
+                          backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
+                          forceZoom: 1.0
                         }}
                       />
                     </Box>

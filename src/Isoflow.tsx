@@ -41,13 +41,13 @@ const App = ({
     load({ ...INITIAL_DATA, ...initialData });
   }, []);
 
-  // Force zoom to 40% when initial data manager is ready
+  // Force zoom to 40% when initial data manager is ready (only for editable modes)
   useEffect(() => {
-    if (initialDataManager.isReady) {
-      // Always set zoom to 40% after initialization
+    if (initialDataManager.isReady && editorMode !== 'NON_INTERACTIVE') {
+      // Set zoom to 40% for editable modes only
       uiStateActions.setZoom(0.4);
     }
-  }, [initialDataManager.isReady, uiStateActions]);
+  }, [initialDataManager.isReady, editorMode, uiStateActions]);
 
   useEffect(() => {
     uiStateActions.setEditorMode(editorMode);

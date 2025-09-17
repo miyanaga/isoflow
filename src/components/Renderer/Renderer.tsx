@@ -15,7 +15,7 @@ import { TransformControlsManager } from 'src/components/TransformControlsManage
 import { useScene } from 'src/hooks/useScene';
 import { RendererProps } from 'src/types/rendererProps';
 
-export const Renderer = ({ showGrid, backgroundColor }: RendererProps) => {
+export const Renderer = ({ showGrid, backgroundColor, forceZoom }: RendererProps) => {
   const containerRef = useRef<HTMLDivElement>();
   const interactionsRef = useRef<HTMLDivElement>();
   const enableDebugTools = useUiStateStore((state) => {
@@ -56,7 +56,7 @@ export const Renderer = ({ showGrid, backgroundColor }: RendererProps) => {
         }
       }}
     >
-      <SceneLayer>
+      <SceneLayer forceZoom={forceZoom}>
         <Rectangles rectangles={rectangles} />
       </SceneLayer>
       <Box
@@ -71,21 +71,21 @@ export const Renderer = ({ showGrid, backgroundColor }: RendererProps) => {
         {isShowGrid && <Grid />}
       </Box>
       {mode.showCursor && (
-        <SceneLayer>
+        <SceneLayer forceZoom={forceZoom}>
           <Cursor />
         </SceneLayer>
       )}
-      <SceneLayer>
+      <SceneLayer forceZoom={forceZoom}>
         <Connectors connectors={connectors} />
       </SceneLayer>
-      <SceneLayer>
+      <SceneLayer forceZoom={forceZoom}>
         <TextBoxes textBoxes={textBoxes} />
       </SceneLayer>
-      <SceneLayer>
+      <SceneLayer forceZoom={forceZoom}>
         <ConnectorLabels connectors={connectors} />
       </SceneLayer>
       {enableDebugTools && (
-        <SceneLayer>
+        <SceneLayer forceZoom={forceZoom}>
           <SizeIndicator />
         </SceneLayer>
       )}
@@ -100,10 +100,10 @@ export const Renderer = ({ showGrid, backgroundColor }: RendererProps) => {
           height: '100%'
         }}
       />
-      <SceneLayer>
+      <SceneLayer forceZoom={forceZoom}>
         <Nodes nodes={items} />
       </SceneLayer>
-      <SceneLayer>
+      <SceneLayer forceZoom={forceZoom}>
         <TransformControlsManager />
       </SceneLayer>
     </Box>

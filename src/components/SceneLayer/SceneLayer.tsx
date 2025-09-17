@@ -8,13 +8,15 @@ interface Props {
   order?: number;
   sx?: SxProps;
   disableAnimation?: boolean;
+  forceZoom?: number;
 }
 
 export const SceneLayer = ({
   children,
   order = 0,
   sx,
-  disableAnimation
+  disableAnimation,
+  forceZoom
 }: Props) => {
   const [isFirstRender, setIsFirstRender] = useState(true);
   const elementRef = useRef<HTMLDivElement>(null);
@@ -22,9 +24,11 @@ export const SceneLayer = ({
   const scroll = useUiStateStore((state) => {
     return state.scroll;
   });
-  const zoom = useUiStateStore((state) => {
+  const storeZoom = useUiStateStore((state) => {
     return state.zoom;
   });
+
+  const zoom = forceZoom !== undefined ? forceZoom : storeZoom;
 
   useEffect(() => {
     if (!elementRef.current) return;
