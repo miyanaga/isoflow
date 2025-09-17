@@ -3,13 +3,21 @@ import cors from 'cors'
 import { json, urlencoded } from 'body-parser'
 import * as path from 'path'
 import * as http from 'http'
+import * as dotenv from 'dotenv'
 import { DocumentManager } from './managers/DocumentManager'
 import { IconManager } from './managers/IconManager'
+import { PublishManager } from './managers/PublishManager'
+
+// Load environment variables
+dotenv.config()
 
 const app = express()
 const server = http.createServer(app)
 
 app.use(cors())
+
+// Configure body parser for different content types
+app.use('/publish', express.raw({ type: 'image/png', limit: '50mb' }))
 app.use(json({ limit: '10mb' }))
 app.use(urlencoded({ extended: true, limit: '10mb' }))
 
@@ -20,6 +28,13 @@ const DATA_DIR = process.env.DATA_DIR || './data'
 
 const documentManager = new DocumentManager(DATA_DIR)
 const iconManager = new IconManager(DATA_DIR)
+const publishManager = new PublishManager({
+  sshHost: process.env.SSH_HOST,
+  sshUser: process.env.SSH_USER,
+  sshPrivateKeyPath: process.env.SSH_PRIVATE_KEY_PATH,
+  sshBasePath: process.env.SSH_BASE_PATH,
+  sshPublishUrl: process.env.SSH_PUBLISH_URL
+})
 
 async function initialize() {
   await documentManager.initialize()
@@ -169,6 +184,56 @@ app.get('/icons/sync', asyncHandler(async (req: Request, res: Response) => {
     const result = await iconManager.syncWithTimestamp(lastUpdated ? String(lastUpdated) : undefined)
     res.json(result)
   } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+}))
+
+app.get('/publish/available', asyncHandler(async (req: Request, res: Response) => {
+  res.json({ available: publishManager.isAvailable() })
+}))
+
+app.get('/publish/url', asyncHandler(async (req: Request, res: Response) => {
+  const { path: filePath } = req.query
+
+  if (!filePath) {
+    return res.status(400).json({ error: 'Path is required' })
+  }
+
+  if (!publishManager.isAvailable()) {
+    return res.status(503).json({ error: 'Publish service not configured' })
+  }
+
+  try {
+    const url = publishManager.getPublishUrl(String(filePath))
+    res.json({ url })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+}))
+
+app.post('/publish', asyncHandler(async (req: Request, res: Response) => {
+  const { path: filePath } = req.query
+
+  if (!filePath) {
+    return res.status(400).json({ error: 'Path is required' })
+  }
+
+  if (!publishManager.isAvailable()) {
+    return res.status(503).json({ error: 'Publish service not configured' })
+  }
+
+  // Get raw body as buffer
+  const rawBody = req.body
+
+  if (!Buffer.isBuffer(rawBody)) {
+    return res.status(400).json({ error: 'Body must be PNG data' })
+  }
+
+  try {
+    const result = await publishManager.publish(String(filePath), rawBody)
+    res.json(result)
+  } catch (error: any) {
+    console.error('Publish error:', error)
     res.status(500).json({ error: error.message })
   }
 }))

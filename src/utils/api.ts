@@ -104,4 +104,32 @@ export const api = {
         params: lastUpdated ? { lastUpdated } : undefined,
       }),
   },
+
+  // Publish endpoints
+  publish: {
+    available: () =>
+      apiRequest<{ available: boolean }>('/publish/available'),
+
+    getUrl: (path: string) =>
+      apiRequest<{ url: string }>('/publish/url', {
+        params: { path }
+      }),
+
+    upload: async (path: string, pngData: Blob) => {
+      const response = await fetch(`/api/publish?path=${encodeURIComponent(path)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'image/png'
+        },
+        body: pngData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || `Publish error: ${response.status}`);
+      }
+
+      return response.json() as Promise<{ url: string }>;
+    },
+  },
 };

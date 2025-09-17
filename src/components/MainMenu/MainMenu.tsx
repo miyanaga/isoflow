@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Menu, Typography, Divider, Card } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -6,6 +6,7 @@ import {
   QuestionAnswer as QuestionAnswerIcon,
   DataObject as ExportJsonIcon,
   ImageOutlined as ExportImageIcon,
+  Publish as PublishIcon,
   FolderOpen as FolderOpenIcon,
   Save as SaveIcon,
   NoteAdd as NewDocIcon,
@@ -17,7 +18,7 @@ import {
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
 import { useUiStateStore } from 'src/stores/uiStateStore';
-import { exportAsJSON, modelFromModelStore } from 'src/utils';
+import { exportAsJSON, modelFromModelStore, api } from 'src/utils';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
 import { useModelStore } from 'src/stores/modelStore';
 import { MenuItem } from './MenuItem';
@@ -27,6 +28,7 @@ import { documentApi } from 'src/services/documentApi';
 export const MainMenu = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
+  const [publishAvailable, setPublishAvailable] = useState(false);
   const documentName = useModelStore((state) => state.documentName);
   const title = useModelStore((state) => state.title);
   const views = useModelStore((state) => {
@@ -49,6 +51,13 @@ export const MainMenu = () => {
   });
   const initialDataManager = useInitialDataManager();
   const { load, clear } = initialDataManager;
+
+  // Check if publish service is available
+  useEffect(() => {
+    api.publish.available()
+      .then(result => setPublishAvailable(result.available))
+      .catch(() => setPublishAvailable(false));
+  }, []);
 
   const onToggleMenu = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -133,6 +142,11 @@ export const MainMenu = () => {
   const onExportAsImage = useCallback(() => {
     uiStateActions.setIsMainMenuOpen(false);
     uiStateActions.setDialog('EXPORT_IMAGE');
+  }, [uiStateActions]);
+
+  const onPublishAsImage = useCallback(() => {
+    uiStateActions.setIsMainMenuOpen(false);
+    uiStateActions.setDialog('PUBLISH_IMAGE');
   }, [uiStateActions]);
 
   const onChangeView = useCallback((viewId: string) => {
@@ -228,6 +242,12 @@ export const MainMenu = () => {
           {mainMenuOptions.includes('EXPORT.PNG') && (
             <MenuItem onClick={onExportAsImage} Icon={<ExportImageIcon />}>
               Export as image
+            </MenuItem>
+          )}
+
+          {mainMenuOptions.includes('EXPORT.PNG') && publishAvailable && (
+            <MenuItem onClick={onPublishAsImage} Icon={<PublishIcon />}>
+              Publish as image
             </MenuItem>
           )}
 
