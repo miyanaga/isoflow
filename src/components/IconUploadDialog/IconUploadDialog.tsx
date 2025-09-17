@@ -16,7 +16,7 @@ import {
   CircularProgress,
   Paper,
 } from '@mui/material';
-import { CloudUpload as UploadIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import { CloudUpload as UploadIcon, Settings as SettingsIcon, Search as SearchIcon } from '@mui/icons-material';
 import { api, getIsoProjectionCss } from 'src/utils';
 import { PROJECTED_TILE_SIZE } from 'src/config';
 import { useModelStore } from 'src/stores/modelStore';
@@ -306,6 +306,20 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
             sx={{ mb: 2 }}
           >
             {selectedFile ? selectedFile.name : 'Choose SVG File'}
+          </Button>
+
+          {/* Import from Freepik button */}
+          <Button
+            variant="outlined"
+            startIcon={<SearchIcon />}
+            onClick={() => {
+              onClose();
+              uiStateActions.setDialog('FREEPIK_SEARCH');
+            }}
+            fullWidth
+            sx={{ mb: 2 }}
+          >
+            Import from Freepik
           </Button>
 
           {/* Icon name input */}

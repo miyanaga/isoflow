@@ -12,17 +12,23 @@ import {
   CircularProgress,
   Typography,
   Card,
-  CardMedia,
   CardContent,
   CardActionArea,
   Chip,
   IconButton,
   InputAdornment,
-  Pagination
+  Pagination,
+  Checkbox,
+  FormControlLabel,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { api } from 'src/utils';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { api, getIsoProjectionCss } from 'src/utils';
 import { useModelStore } from 'src/stores/modelStore';
 import { useScene } from 'src/hooks/useScene';
 import { useIconSync } from 'src/hooks/useIconSync';
@@ -54,12 +60,24 @@ interface FreepikIcon {
   };
   style?: string | { name: string };
   tags: string[] | Array<{ name: string; slug: string }>;
+  searchKeyword?: string; // Track which keyword found this icon
+}
+
+interface GroupedIcons {
+  setInfo: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
+  icons: FreepikIcon[];
 }
 
 interface Props {
   onClose: () => void;
   onSelectIcon?: (icon: FreepikIcon) => void;
 }
+
+type IconType = 'isometric' | 'flat';
 
 export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
   const modelActions = useModelStore((state) => state.actions);
@@ -76,6 +94,10 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
   const [totalResults, setTotalResults] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [iconType, setIconType] = useState<IconType>('isometric');
+  const [searchedQuery, setSearchedQuery] = useState('');
+  const [searchIsometric, setSearchIsometric] = useState(true);
+  const [groupedResults, setGroupedResults] = useState<GroupedIcons[]>([]);
 
   const handleSearch = useCallback(async (page: number = 1) => {
     if (!searchQuery.trim()) {
@@ -86,30 +108,102 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    setSearchedQuery(searchQuery);
 
     try {
-      const response = await api.freepik.search(searchQuery, {
-        per_page: 100,  // Maximum allowed by API
-        page,
-        thumbnail_size: 256
+      // Split keywords by comma and trim
+      const keywords = searchQuery.split(',').map(k => k.trim()).filter(k => k);
+
+      // Prepare search promises for parallel execution
+      const searchPromises = keywords.map(async (keyword) => {
+        // Add isometric to keyword if checkbox is checked
+        const finalKeyword = searchIsometric ? `${keyword} isometric` : keyword;
+
+        const response = await api.freepik.search(finalKeyword, {
+          per_page: 100,  // Maximum allowed by API
+          page,
+          thumbnail_size: 256
+        });
+
+        // Add search keyword to each icon for tracking
+        return response.data.map((icon: FreepikIcon) => ({
+          ...icon,
+          searchKeyword: keyword
+        }));
       });
 
-      setSearchResults(response.data);
-      setTotalPages(response.meta.pagination.total_pages);
-      setTotalResults(response.meta.pagination.total);
+      // Execute all searches in parallel
+      const allResults = await Promise.all(searchPromises);
+
+      // Flatten and merge results
+      const mergedResults = allResults.flat();
+
+      // Remove duplicates based on icon ID
+      const uniqueResults = Array.from(
+        new Map(mergedResults.map(icon => [icon.id, icon])).values()
+      );
+
+      // Group by icon set
+      const grouped = groupIconsBySet(uniqueResults);
+
+      setSearchResults(uniqueResults);
+      setGroupedResults(grouped);
+      setTotalResults(uniqueResults.length);
+      setTotalPages(Math.ceil(uniqueResults.length / 100));
       setCurrentPage(page);
     } catch (err: any) {
       setError(err.message || 'Failed to search icons');
       setSearchResults([]);
+      setGroupedResults([]);
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchIsometric]);
 
+
+  const groupIconsBySet = useCallback((icons: FreepikIcon[]): GroupedIcons[] => {
+    const groups = new Map<string, GroupedIcons>();
+
+    icons.forEach(icon => {
+      // Use style as the grouping key (e.g., "Generic Isometric", "Basic Miscellany Lineal")
+      const styleName = typeof icon.style === 'string' ? icon.style : icon.style?.name;
+      const setId = styleName || 'no-style';
+      const setName = styleName || 'Individual Icons';
+
+      if (!groups.has(setId)) {
+        groups.set(setId, {
+          setInfo: {
+            id: setId,
+            name: setName,
+            slug: setId.toLowerCase().replace(/\s+/g, '-')
+          },
+          icons: []
+        });
+      }
+
+      groups.get(setId)!.icons.push(icon);
+    });
+
+    // Convert to array and sort by icon count (descending)
+    const groupArray = Array.from(groups.values());
+    groupArray.sort((a, b) => b.icons.length - a.icons.length);
+
+    // Sort icons within each group by search keyword
+    groupArray.forEach(group => {
+      group.icons.sort((a, b) => {
+        const keywordA = a.searchKeyword || '';
+        const keywordB = b.searchKeyword || '';
+        return keywordA.localeCompare(keywordB);
+      });
+    });
+
+    return groupArray;
+  }, []);
 
   const handleClear = useCallback(() => {
     setSearchQuery('');
     setSearchResults([]);
+    setGroupedResults([]);
     setError(null);
     setCurrentPage(1);
     setTotalPages(0);
@@ -135,11 +229,15 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
       setDownloadError(null);
 
       try {
-        // Generate a unique name for the icon
-        const iconName = `freepik-${icon.name || icon.id}`;
+        // Generate a unique name for the icon with type suffix
+        const baseName = `freepik-${icon.name || icon.id}`;
+        const iconName = iconType === 'flat' ? `${baseName}-flat` : baseName;
 
-        // Download the icon
-        await api.icons.download(icon.id, iconName, icon.title);
+        // Download the icon with type metadata
+        await api.icons.download(icon.id, iconName, icon.title, iconType === 'isometric');
+
+        // Remove from downloading set
+        downloadingRef.current.delete(icon.id);
 
         // Mark as downloaded
         setDownloadedIcons((prev) => new Set([...prev, icon.id]));
@@ -174,8 +272,7 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
               size: 1
             });
 
-            // Close dialog after successful download and placement
-            onClose();
+            // Don't close dialog - user may want to download more icons
           }
         }, 500); // Wait 500ms for sync
       } catch (error: any) {
@@ -183,7 +280,7 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
         downloadingRef.current.delete(icon.id);
       }
     },
-    [modelActions, scene, triggerSync, onClose]
+    [modelActions, scene, triggerSync, iconType]
   );
 
   const getThumbnailUrl = (icon: FreepikIcon) => {
@@ -196,13 +293,18 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
       <DialogTitle>Search Freepik Icons</DialogTitle>
       <DialogContent>
         <Stack spacing={3}>
-          <Box>
+          <Stack direction="row" spacing={2} alignItems="center">
             <TextField
               fullWidth
               label="Search icons"
-              placeholder="Enter keywords (e.g., home, business, settings)"
+              placeholder="Enter keywords separated by comma (e.g., server, file, cloud)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch(1);
+                }
+              }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -222,7 +324,16 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
                 )
               }}
             />
-          </Box>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={searchIsometric}
+                  onChange={(e) => setSearchIsometric(e.target.checked)}
+                />
+              }
+              label="Isometric"
+            />
+          </Stack>
 
           {error && (
             <Alert severity="error">{error}</Alert>
@@ -233,9 +344,30 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
           )}
 
           {totalResults > 0 && !isLoading && (
-            <Typography variant="body2" color="text.secondary">
-              Found {totalResults} results for "{searchQuery}"
-            </Typography>
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Found {totalResults} results for "{searchedQuery}"
+              </Typography>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Import Type:</Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                  <Button
+                    size="small"
+                    variant={iconType === 'isometric' ? 'contained' : 'outlined'}
+                    onClick={() => setIconType('isometric')}
+                  >
+                    Isometric
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={iconType === 'flat' ? 'contained' : 'outlined'}
+                    onClick={() => setIconType('flat')}
+                  >
+                    Flat
+                  </Button>
+                </Stack>
+              </Box>
+            </Stack>
           )}
 
           {isLoading ? (
@@ -251,8 +383,21 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
             </Box>
           ) : (
             <>
-              <Grid container spacing={2}>
-                {searchResults.map((icon) => {
+              {groupedResults.length > 0 ? (
+                <Stack spacing={2}>
+                  {groupedResults.map((group) => (
+                    <Accordion key={group.setInfo.id} defaultExpanded>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Stack direction="row" spacing={2} alignItems="center" sx={{ width: '100%' }}>
+                          <Typography variant="h6">
+                            {group.setInfo.name}
+                          </Typography>
+                          <Chip label={`${group.icons.length} icons`} size="small" />
+                        </Stack>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Grid container spacing={2}>
+                          {group.icons.map((icon) => {
                   const isDownloading = downloadingRef.current.has(icon.id);
                   const isDownloaded = downloadedIcons.has(icon.id);
 
@@ -269,17 +414,30 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
                           onClick={() => handleIconDownload(icon)}
                           disabled={isDownloading}
                         >
-                          <CardMedia
-                            component="img"
-                            height="120"
-                            image={getThumbnailUrl(icon)}
-                            alt={icon.title}
+                          <Box
                             sx={{
-                              objectFit: 'contain',
+                              height: 120,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              bgcolor: 'grey.50',
                               p: 2,
-                              bgcolor: 'grey.50'
+                              overflow: 'hidden'
                             }}
-                          />
+                          >
+                            <img
+                              src={getThumbnailUrl(icon)}
+                              alt={icon.title}
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                                transform: iconType === 'flat' ?
+                                  `${getIsoProjectionCss()} scaleX(-1)` :
+                                  'none'
+                              }}
+                            />
+                          </Box>
                           {isDownloaded && (
                             <Box
                               sx={{
@@ -333,8 +491,104 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
                       </Card>
                     </Grid>
                   );
-                })}
-              </Grid>
+                          })}
+                        </Grid>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))}
+                </Stack>
+              ) : (
+                <Grid container spacing={2}>
+                  {searchResults.map((icon) => {
+                    const isDownloading = downloadingRef.current.has(icon.id);
+                    const isDownloaded = downloadedIcons.has(icon.id);
+
+                    return (
+                      <Grid item xs={6} sm={4} md={3} lg={2} key={icon.id}>
+                        <Card
+                          sx={{
+                            height: '100%',
+                            position: 'relative',
+                            opacity: isDownloading ? 0.6 : 1
+                          }}
+                        >
+                          <CardActionArea
+                            onClick={() => handleIconDownload(icon)}
+                            disabled={isDownloading}
+                          >
+                            <Box
+                              sx={{
+                                height: 120,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: 'grey.50',
+                                p: 2,
+                                overflow: 'hidden'
+                              }}
+                            >
+                              <img
+                                src={getThumbnailUrl(icon)}
+                                alt={icon.title}
+                                style={{
+                                  maxWidth: '100%',
+                                  maxHeight: '100%',
+                                  objectFit: 'contain',
+                                  transform: iconType === 'flat' ?
+                                    `${getIsoProjectionCss()} scaleX(-1)` :
+                                    'none'
+                                }}
+                              />
+                            </Box>
+                            {isDownloaded && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: 8,
+                                  right: 8,
+                                  bgcolor: 'success.main',
+                                  color: 'white',
+                                  borderRadius: '50%',
+                                  width: 24,
+                                  height: 24,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '14px'
+                                }}
+                              >
+                                ✓
+                              </Box>
+                            )}
+                            {isDownloading && (
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  transform: 'translate(-50%, -50%)'
+                                }}
+                              >
+                                <CircularProgress size={24} />
+                              </Box>
+                            )}
+                            <CardContent sx={{ p: 1 }}>
+                              <Typography
+                                variant="caption"
+                                component="div"
+                                noWrap
+                                title={icon.title}
+                              >
+                                {icon.title}
+                              </Typography>
+                            </CardContent>
+                          </CardActionArea>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              )}
 
               {totalPages > 1 && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>

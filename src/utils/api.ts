@@ -104,10 +104,10 @@ export const api = {
         params: lastUpdated ? { lastUpdated } : undefined,
       }),
 
-    download: (iconId: string, name: string, title?: string) =>
+    download: (iconId: string, name: string, title?: string, isIsometric?: boolean) =>
       apiRequest<{ success: boolean; name: string; message: string }>('/icons/download', {
         method: 'POST',
-        body: JSON.stringify({ iconId, name, title }),
+        body: JSON.stringify({ iconId, name, title, isIsometric }),
       }),
   },
 

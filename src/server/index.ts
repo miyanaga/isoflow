@@ -283,7 +283,7 @@ app.get('/freepik/search', asyncHandler(async (req: Request, res: Response) => {
 }))
 
 app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => {
-  const { iconId, name, title } = req.body
+  const { iconId, name, title, isIsometric } = req.body
 
   if (!iconId || !name) {
     return res.status(400).json({ error: 'Icon ID and name are required' })
@@ -295,7 +295,15 @@ app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => 
 
   try {
     // Download SVG from Freepik
-    const svgContent = await freepikManager.downloadIconAsString(iconId)
+    let svgContent = await freepikManager.downloadIconAsString(iconId)
+
+    // Add metadata to SVG to indicate if it's isometric
+    // Since this is server-side Node.js, we need to use a different approach
+    // We'll add the metadata as an attribute in the SVG string
+    if (svgContent.includes('<svg')) {
+      const isometricAttr = ` data-isometric="${isIsometric ? 'true' : 'false'}"`
+      svgContent = svgContent.replace('<svg', `<svg${isometricAttr}`)
+    }
 
     // Save to icons directory
     await iconManager.save(name, svgContent)
