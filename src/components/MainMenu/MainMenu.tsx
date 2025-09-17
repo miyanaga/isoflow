@@ -13,7 +13,8 @@ import {
   ViewList as ViewListIcon,
   Add as AddIcon,
   Edit as EditIcon,
-  Upload as UploadIcon
+  Upload as UploadIcon,
+  Settings as SettingsIcon
 } from '@mui/icons-material';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
@@ -255,6 +256,13 @@ export const MainMenu = () => {
 
           <MenuItem onClick={onUploadIcon} Icon={<UploadIcon />}>
             Upload Icon
+          </MenuItem>
+
+          <MenuItem onClick={() => {
+            uiStateActions.setDialog('ICON_MANAGEMENT');
+            uiStateActions.setIsMainMenuOpen(false);
+          }} Icon={<SettingsIcon />}>
+            Manage Icons
           </MenuItem>
 
 

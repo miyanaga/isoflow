@@ -132,5 +132,24 @@ export class IconManager implements IconManagerInterface {
     return { lastUpdated: serverLastUpdated, data }
   }
 
+  async rename(oldName: string, newName: string): Promise<void> {
+    const oldPath = this.getFilePath(oldName)
+    const newPath = this.getFilePath(newName)
+
+    // Check if old icon exists
+    const exists = await this.exists(oldName)
+    if (!exists) {
+      throw new Error(`Icon "${oldName}" not found`)
+    }
+
+    // Check if new name already exists
+    const newExists = await this.exists(newName)
+    if (newExists) {
+      throw new Error(`Icon "${newName}" already exists`)
+    }
+
+    await fs.rename(oldPath, newPath)
+  }
+
   // Removed watchIcons method as we're using polling instead
 }

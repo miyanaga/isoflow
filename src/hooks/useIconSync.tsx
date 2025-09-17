@@ -19,7 +19,7 @@ export const useIconSync = () => {
   const lastUpdatedRef = useRef<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const syncIcons = useCallback(async () => {
+  const syncIcons = useCallback(async (forceSync = false) => {
     try {
       const response = await api.icons.sync(lastUpdatedRef.current);
       const syncData = response as SyncResponse;
@@ -36,8 +36,8 @@ export const useIconSync = () => {
         return;
       }
 
-      // If timestamps match, no update needed
-      if (syncData.lastUpdated === lastUpdatedRef.current) {
+      // If timestamps match and not force sync, no update needed
+      if (!forceSync && syncData.lastUpdated === lastUpdatedRef.current) {
         return;
       }
 
@@ -94,7 +94,7 @@ export const useIconSync = () => {
   const triggerSync = useCallback(async () => {
     // Reset timestamp to force full sync
     lastUpdatedRef.current = null;
-    await syncIcons();
+    await syncIcons(true);
   }, [syncIcons]);
 
   useEffect(() => {

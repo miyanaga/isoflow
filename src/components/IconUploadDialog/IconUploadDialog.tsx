@@ -16,10 +16,11 @@ import {
   CircularProgress,
   Paper,
 } from '@mui/material';
-import { CloudUpload as UploadIcon } from '@mui/icons-material';
+import { CloudUpload as UploadIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { api, getIsoProjectionCss } from 'src/utils';
 import { PROJECTED_TILE_SIZE } from 'src/config';
 import { useModelStore } from 'src/stores/modelStore';
+import { useUiStateStore } from 'src/stores/uiStateStore';
 import { Icon } from 'src/types';
 
 interface Props {
@@ -38,6 +39,7 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>('');
   const modelActions = useModelStore((state) => state.actions);
+  const uiStateActions = useUiStateStore((state) => state.actions);
 
   useEffect(() => {
     if (!open) {
@@ -363,7 +365,17 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ justifyContent: 'space-between' }}>
+        <Button
+          onClick={() => {
+            uiStateActions.setDialog('ICON_MANAGEMENT');
+          }}
+          startIcon={<SettingsIcon />}
+          disabled={isUploading}
+        >
+          Manage Icons
+        </Button>
+        <Box>
         <Button onClick={onClose} disabled={isUploading}>
           Cancel
         </Button>
@@ -375,6 +387,7 @@ export const IconUploadDialog = ({ open, onClose }: Props) => {
         >
           {isUploading ? 'Uploading...' : 'Add Icon'}
         </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

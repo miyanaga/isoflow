@@ -188,6 +188,20 @@ app.get('/icons/sync', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
+app.put('/icons/rename', asyncHandler(async (req: Request, res: Response) => {
+  const { oldName, newName } = req.body
+  if (!oldName || !newName) {
+    return res.status(400).json({ error: 'Old name and new name are required' })
+  }
+
+  try {
+    await iconManager.rename(oldName, newName)
+    res.json({ success: true })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+}))
+
 app.get('/publish/available', asyncHandler(async (req: Request, res: Response) => {
   res.json({ available: publishManager.isAvailable() })
 }))
