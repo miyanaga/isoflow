@@ -27,6 +27,19 @@ async function initialize() {
   await documentManager.initialize()
   await iconManager.initialize()
 
+  // Set up a single shared file watcher
+  iconManager.watchIcons((icons) => {
+    // Broadcast to all connected WebSocket clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'sync',
+          data: icons
+        }))
+      }
+    })
+  })
+
   // Setup WebSocket connections
   wss.on('connection', (ws: WebSocket) => {
     console.log('WebSocket client connected for icon sync')
@@ -45,24 +58,12 @@ async function initialize() {
       }))
     })
 
-    // Setup file watcher
-    const unsubscribe = iconManager.watchIcons((icons) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'sync',
-          data: icons
-        }))
-      }
-    })
-
     ws.on('close', () => {
       console.log('WebSocket client disconnected')
-      unsubscribe()
     })
 
     ws.on('error', (error) => {
       console.error('WebSocket error:', error)
-      unsubscribe()
     })
   })
 }

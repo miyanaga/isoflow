@@ -17,6 +17,7 @@ import { useScene } from 'src/hooks/useScene';
 import { useModelStore } from 'src/stores/modelStore';
 import { ExportImageDialog } from '../ExportImageDialog/ExportImageDialog';
 import { EditViewsDialog } from '../EditViewsDialog/EditViewsDialog';
+import { IconUploadDialog } from '../IconUploadDialog/IconUploadDialog';
 
 const ToolsEnum = {
   MAIN_MENU: 'MAIN_MENU',
@@ -318,6 +319,15 @@ export const UiOverlay = () => {
 
       {dialog === 'EDIT_VIEWS' && (
         <EditViewsDialog
+          onClose={() => {
+            return uiStateActions.setDialog(null);
+          }}
+        />
+      )}
+
+      {dialog === 'UPLOAD_ICON' && (
+        <IconUploadDialog
+          open={true}
           onClose={() => {
             return uiStateActions.setDialog(null);
           }}

@@ -52,13 +52,28 @@ export const useIconSync = () => {
           console.log(`Syncing ${message.data.length} CUSTOM icons`);
 
           // Convert server icons to Isoflow icons
-          const customIcons: Icon[] = message.data.map(iconData => ({
-            id: `custom_${iconData.name}`,
-            name: iconData.name,
-            url: `data:image/svg+xml;base64,${btoa(iconData.svg)}`,
-            collection: 'CUSTOM',
-            isIsometric: false
-          }));
+          const customIcons: Icon[] = message.data.map(iconData => {
+            // Parse SVG to check if it has the isometric attribute
+            let isIsometric = false;
+            try {
+              const parser = new DOMParser();
+              const svgDoc = parser.parseFromString(iconData.svg, 'image/svg+xml');
+              const svgElement = svgDoc.querySelector('svg');
+              if (svgElement) {
+                isIsometric = svgElement.getAttribute('data-isometric') === 'true';
+              }
+            } catch (error) {
+              console.error('Error parsing SVG:', error);
+            }
+
+            return {
+              id: `custom_${iconData.name}`,
+              name: iconData.name,
+              url: `data:image/svg+xml;base64,${btoa(iconData.svg)}`,
+              collection: 'CUSTOM',
+              isIsometric
+            };
+          });
 
           // Get current icons and filter out existing CUSTOM icons
           const currentState = modelActions.get();

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { Stack, Alert } from '@mui/material';
+import { Stack, Alert, Button } from '@mui/material';
+import { Upload as UploadIcon } from '@mui/icons-material';
 import { ControlsContainer } from 'src/components/ItemControls/components/ControlsContainer';
 import { useUiStateStore } from 'src/stores/uiStateStore';
 import { Icon } from 'src/types';
@@ -39,6 +40,14 @@ export const IconSelectionControls = () => {
         <Section sx={{ position: 'sticky', top: 0, pt: 6, pb: 3 }}>
           <Stack spacing={2}>
             <Searchbox value={filter} onChange={setFilter} />
+            <Button
+              variant="contained"
+              fullWidth
+              startIcon={<UploadIcon />}
+              onClick={() => uiStateActions.setDialog('UPLOAD_ICON')}
+            >
+              Upload Custom Icon
+            </Button>
             <Alert severity="info">
               You can drag and drop any item below onto the canvas.
             </Alert>

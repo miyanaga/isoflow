@@ -99,7 +99,11 @@ export class IconManager implements IconManagerInterface {
     this.watcher = chokidar.watch(watchPath, {
       ignoreInitial: true,
       persistent: true,
-      depth: 0
+      depth: 0,
+      awaitWriteFinish: {
+        stabilityThreshold: 100,
+        pollInterval: 100
+      }
     })
 
     const triggerSync = async () => {

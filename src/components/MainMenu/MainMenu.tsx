@@ -11,7 +11,8 @@ import {
   NoteAdd as NewDocIcon,
   ViewList as ViewListIcon,
   Add as AddIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Upload as UploadIcon
 } from '@mui/icons-material';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
@@ -150,6 +151,11 @@ export const MainMenu = () => {
     uiStateActions.setDialog('EDIT_VIEWS');
   }, [uiStateActions]);
 
+  const onUploadIcon = useCallback(() => {
+    uiStateActions.setIsMainMenuOpen(false);
+    uiStateActions.setDialog('UPLOAD_ICON');
+  }, [uiStateActions]);
+
   const sectionVisibility = useMemo(() => {
     return {
       actions: Boolean(
@@ -224,6 +230,12 @@ export const MainMenu = () => {
               Export as image
             </MenuItem>
           )}
+
+          <Divider />
+
+          <MenuItem onClick={onUploadIcon} Icon={<UploadIcon />}>
+            Upload Icon
+          </MenuItem>
 
 
           {sectionVisibility.views && (
