@@ -162,8 +162,8 @@ export const useInteractionManager = () => {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // Spaceキーが押された時、一時的にPanモードに切り替え（ダイアログが開いていない時のみ）
-      if (e.code === 'Space' && !e.repeat && uiState.mode.type !== 'PAN' && !uiState.dialog) {
+      // Option/Altキーが押された時、一時的にPanモードに切り替え（ダイアログが開いていない時のみ）
+      if (e.altKey && !e.repeat && uiState.mode.type !== 'PAN' && !uiState.dialog) {
         e.preventDefault();
         uiState.actions.setTemporaryMode({
           type: 'PAN',
@@ -173,8 +173,8 @@ export const useInteractionManager = () => {
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      // Spaceキーが離された時、元のモードに戻る（ダイアログが開いていない時のみ）
-      if (e.code === 'Space' && !uiState.dialog) {
+      // Option/Altキーが離された時、元のモードに戻る（ダイアログが開いていない時のみ）
+      if (e.key === 'Alt' && !uiState.dialog) {
         e.preventDefault();
         uiState.actions.clearTemporaryMode();
       }

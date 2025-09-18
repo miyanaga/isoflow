@@ -12,23 +12,26 @@ interface Props {
 export const TextBox = ({ textBox }: Props) => {
   const { paddingX, fontProps } = useTextBoxProps(textBox);
 
-  // Early return if textBox data is missing
-  if (!textBox?.size?.width || !textBox?.tile) {
-    return null;
-  }
-
   const to = useMemo(() => {
+    if (!textBox?.tile || !textBox?.size?.width) {
+      return { x: 0, y: 0 };
+    }
     return CoordsUtils.add(textBox.tile, {
       x: textBox.size.width,
       y: 0
     });
-  }, [textBox.tile, textBox.size.width]);
+  }, [textBox?.tile, textBox?.size?.width]);
 
   const { css } = useIsoProjection({
-    from: textBox.tile,
+    from: textBox?.tile || { x: 0, y: 0 },
     to,
-    orientation: textBox.orientation
+    orientation: textBox?.orientation || 'HORIZONTAL'
   });
+
+  // Early return if textBox data is missing
+  if (!textBox?.size?.width || !textBox?.tile) {
+    return null;
+  }
 
   return (
     <Box style={css}>

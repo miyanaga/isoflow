@@ -20,7 +20,8 @@
     "docker:build": "webpack --config ./webpack/docker.config.js",
     "server": "ts-node --project tsconfig.server.json src/server/index.ts",
     "server:dev": "nodemon --watch src/server --ext ts --exec ts-node --project tsconfig.server.json src/server/index.ts",
-    "server:build": "tsc --project tsconfig.server.json"
+    "server:build": "tsc --project tsconfig.server.json",
+    "all-in-one": "concurrently --kill-others --names \"client,server\" -c \"blue,green\" \"yarn start\" \"yarn server:dev\""
   },
   "devDependencies": {
     "@isoflow/isopacks": "^0.0.10",
@@ -44,7 +45,7 @@
     "@types/webpack-env": "^1.18.0",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "concurrently": "^7.6.0",
+    "concurrently": "^9.2.1",
     "css-loader": "^6.8.1",
     "eslint": "^8.44.0",
     "eslint-config-airbnb": "^19.0.4",

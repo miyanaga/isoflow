@@ -1,29 +1,19 @@
-# Use the official Node.js runtime as the base image
-FROM node:21 as build
+FROM node:22
 
-# Set the working directory in the container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Copy package files
+COPY package.json yarn.lock ./
 
 # Install dependencies
-RUN npm install
+RUN yarn install
 
-# Copy the entire application code to the container
+# Copy application source
 COPY . .
 
-# Build the React app for production
-RUN npm run docker:build
+# Expose ports for both client and server
+EXPOSE 3000 3080
 
-# Use Nginx as the production server
-FROM nginx:alpine
-
-# Copy the built React app to Nginx's web server directory
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Expose port 80 for the Nginx server
-EXPOSE 80
-
-# Start Nginx when the container runs
-CMD ["nginx", "-g", "daemon off;"]
+# Start both client and server
+CMD ["yarn", "all-in-one"]

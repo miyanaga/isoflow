@@ -110,13 +110,19 @@ export const MainMenu = () => {
     uiStateActions.setIsMainMenuOpen(false);
   }, [modelActions, clear, uiStateActions]);
 
-  const onSaveDocument = useCallback(async () => {
+  const onSaveDocument = useCallback(async (skipPrompt?: boolean) => {
     let currentName = documentName;
     if (!currentName || currentName === 'Untitled') {
       currentName = title || 'Untitled';
     }
-    const name = window.prompt('Save document as:', currentName);
-    if (!name) return;
+
+    // If skipPrompt is true and we have a valid document name, save directly
+    let name = currentName;
+    if (!skipPrompt || !documentName || documentName === 'Untitled') {
+      const promptedName = window.prompt('Save document as:', currentName);
+      if (!promptedName) return;
+      name = promptedName;
+    }
 
     try {
       const modelState = modelActions.get();
@@ -128,6 +134,22 @@ export const MainMenu = () => {
     }
     uiStateActions.setIsMainMenuOpen(false);
   }, [documentName, title, modelActions, uiStateActions]);
+
+  // Add keyboard shortcut for Cmd+S / Ctrl+S
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd+S (Mac) or Ctrl+S (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        // Save directly if document name is set, otherwise prompt for name
+        const hasValidName = !!(documentName && documentName !== 'Untitled');
+        onSaveDocument(hasValidName);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [documentName, onSaveDocument]);
 
   const onOpenDocument = useCallback(() => {
     setDocumentDialogOpen(true);
@@ -219,7 +241,7 @@ export const MainMenu = () => {
             New Document
           </MenuItem>
 
-          <MenuItem onClick={onSaveDocument} Icon={<SaveIcon />}>
+          <MenuItem onClick={() => onSaveDocument()} Icon={<SaveIcon />}>
             Save {documentName ? `(${documentName})` : ''}
           </MenuItem>
 

@@ -57,29 +57,30 @@ export const Node = ({ node, order }: Props) => {
           top: position.y
         }}
       >
-        {(modelItem.name || description) && (
-          <Box
-            sx={{ position: 'absolute' }}
-            style={{ bottom: labelOnly ? PROJECTED_TILE_SIZE.height / 2 : PROJECTED_TILE_SIZE.height / 2 }}
+        <Box
+          sx={{
+            position: 'absolute',
+            display: (modelItem.name || description) ? 'block' : 'none'
+          }}
+          style={{ bottom: labelOnly ? PROJECTED_TILE_SIZE.height / 2 : PROJECTED_TILE_SIZE.height / 2 }}
+        >
+          <ExpandableLabel
+            maxWidth={250}
+            expandDirection="BOTTOM"
+            labelHeight={labelOnly ? 0 : (node.labelHeight ?? DEFAULT_LABEL_HEIGHT) * nodeSize}
+            labelSize={labelSize}
           >
-            <ExpandableLabel
-              maxWidth={250}
-              expandDirection="BOTTOM"
-              labelHeight={labelOnly ? 0 : (node.labelHeight ?? DEFAULT_LABEL_HEIGHT) * nodeSize}
-              labelSize={labelSize}
-            >
-              <Stack spacing={1}>
-                {modelItem.name && (
-                  <Typography fontWeight={600}>{modelItem.name}</Typography>
+            <Stack spacing={1}>
+              {modelItem.name && (
+                <Typography fontWeight={600}>{modelItem.name}</Typography>
+              )}
+              {modelItem.description &&
+                modelItem.description !== MARKDOWN_EMPTY_VALUE && (
+                  <MarkdownEditor value={modelItem.description} readOnly />
                 )}
-                {modelItem.description &&
-                  modelItem.description !== MARKDOWN_EMPTY_VALUE && (
-                    <MarkdownEditor value={modelItem.description} readOnly />
-                  )}
-              </Stack>
-            </ExpandableLabel>
-          </Box>
-        )}
+            </Stack>
+          </ExpandableLabel>
+        </Box>
         {iconComponent && !labelOnly && (
           <Box
             sx={{
