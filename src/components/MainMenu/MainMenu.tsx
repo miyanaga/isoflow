@@ -101,56 +101,138 @@ export const MainMenu = () => {
     uiStateActions.setIsMainMenuOpen(false);
   }, [uiStateActions, load]);
 
-  const onNewDocument = useCallback(() => {
-    const name = window.prompt('Enter document name:', 'New Document');
-    if (!name) return;
+  const onNewDocument = useCallback(async () => {
+    let name: string | null = null;
+    let nameExists = true;
 
-    clear();
-    modelActions.setDocumentName(name);
-    modelActions.setTitle(name);
-    uiStateActions.setIsMainMenuOpen(false);
+    // Keep asking until we get a unique name or user cancels
+    while (nameExists) {
+      name = window.prompt('Enter document name:', name || 'New Document');
+      if (!name) return;
+
+      try {
+        const exists = await documentApi.exists(name);
+        if (exists) {
+          alert(`Document "${name}" already exists. Please choose a different name.`);
+        } else {
+          nameExists = false;
+        }
+      } catch (err) {
+        console.error('Error checking document existence:', err);
+        alert('Failed to check if document exists. Please try again.');
+        return;
+      }
+    }
+
+    if (name) {
+      // Clear the current document
+      clear();
+      // Set the document name and title
+      modelActions.setDocumentName(name);
+      modelActions.setTitle(name);
+
+      // Save the new document immediately
+      try {
+        const modelState = modelActions.get();
+        const model = modelFromModelStore(modelState);
+        await documentApi.save(name, model);
+      } catch (err: any) {
+        alert(`Failed to save document: ${err.message}`);
+      }
+
+      uiStateActions.setIsMainMenuOpen(false);
+    }
   }, [modelActions, clear, uiStateActions]);
 
-  const onSaveDocument = useCallback(async (skipPrompt?: boolean) => {
-    let currentName = documentName;
-    if (!currentName || currentName === 'Untitled') {
-      currentName = title || 'Untitled';
+  const onSaveAsDocument = useCallback(async () => {
+    let currentName = documentName || title || 'Untitled';
+    let name: string | null = null;
+    let nameExists = true;
+
+    // Keep asking until we get a unique name or user cancels
+    while (nameExists) {
+      name = window.prompt('Save document as:', name || currentName);
+      if (!name) return;
+
+      // Don't check if it's the same as current document name
+      if (name === documentName) {
+        nameExists = false;
+      } else {
+        try {
+          const exists = await documentApi.exists(name);
+          if (exists) {
+            alert(`Document "${name}" already exists. Please choose a different name.`);
+          } else {
+            nameExists = false;
+          }
+        } catch (err) {
+          console.error('Error checking document existence:', err);
+          alert('Failed to check if document exists. Please try again.');
+          return;
+        }
+      }
     }
 
-    // If skipPrompt is true and we have a valid document name, save directly
-    let name = currentName;
-    if (!skipPrompt || !documentName || documentName === 'Untitled') {
-      const promptedName = window.prompt('Save document as:', currentName);
-      if (!promptedName) return;
-      name = promptedName;
-    }
-
-    try {
-      const modelState = modelActions.get();
-      const model = modelFromModelStore(modelState);
-      await documentApi.save(name, model);
-      modelActions.setDocumentName(name);
-    } catch (err: any) {
-      alert(`Failed to save: ${err.message}`);
+    if (name) {
+      try {
+        const modelState = modelActions.get();
+        const model = modelFromModelStore(modelState);
+        await documentApi.save(name, model);
+        modelActions.setDocumentName(name);
+        modelActions.setTitle(name);
+      } catch (err: any) {
+        alert(`Failed to save: ${err.message}`);
+      }
     }
     uiStateActions.setIsMainMenuOpen(false);
   }, [documentName, title, modelActions, uiStateActions]);
 
-  // Add keyboard shortcut for Cmd+S / Ctrl+S
+  // Auto-save every 10 seconds if document has a name
+  useEffect(() => {
+    if (!documentName || documentName === 'Untitled') {
+      return; // Don't auto-save unnamed documents
+    }
+
+    const autoSave = async () => {
+      try {
+        const modelState = modelActions.get();
+        const model = modelFromModelStore(modelState);
+        await documentApi.save(documentName, model);
+        console.log(`Auto-saved document: ${documentName}`);
+      } catch (err: any) {
+        console.error('Auto-save failed:', err.message);
+      }
+    };
+
+    const intervalId = setInterval(autoSave, 10000); // 10 seconds
+
+    return () => clearInterval(intervalId);
+  }, [documentName, modelActions]);
+
+  // Add keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Cmd+S (Mac) or Ctrl+S (Windows/Linux)
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        // Save directly if document name is set, otherwise prompt for name
-        const hasValidName = !!(documentName && documentName !== 'Untitled');
-        onSaveDocument(hasValidName);
+      if (!(e.metaKey || e.ctrlKey)) return;
+
+      switch (e.key.toLowerCase()) {
+        case 'n':
+          e.preventDefault();
+          onNewDocument();
+          break;
+        case 'f':
+          e.preventDefault();
+          uiStateActions.setDialog('FREEPIK_SEARCH');
+          break;
+        case 'u':
+          e.preventDefault();
+          uiStateActions.setDialog('UPLOAD_ICON');
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [documentName, onSaveDocument]);
+  }, [onNewDocument, uiStateActions]);
 
   const onOpenDocument = useCallback(() => {
     setDocumentDialogOpen(true);
@@ -260,12 +342,12 @@ export const MainMenu = () => {
         }}
       >
         <Card sx={{ py: 1 }}>
-          <MenuItem onClick={onNewDocument} Icon={<NewDocIcon />}>
+          <MenuItem onClick={onNewDocument} Icon={<NewDocIcon />} shortcut="⌘N">
             New Document
           </MenuItem>
 
-          <MenuItem onClick={() => onSaveDocument()} Icon={<SaveIcon />}>
-            Save {documentName ? `(${documentName})` : ''}
+          <MenuItem onClick={onSaveAsDocument} Icon={<SaveIcon />}>
+            Save As...
           </MenuItem>
 
           <MenuItem onClick={onOpenDocument} Icon={<FolderOpenIcon />}>
@@ -287,27 +369,27 @@ export const MainMenu = () => {
           )}
 
           {mainMenuOptions.includes('EXPORT.PNG') && (
-            <MenuItem onClick={onExportAsImage} Icon={<ExportImageIcon />}>
+            <MenuItem onClick={onExportAsImage} Icon={<ExportImageIcon />} shortcut="⌘E">
               Export as image
             </MenuItem>
           )}
 
           {mainMenuOptions.includes('EXPORT.PNG') && publishAvailable && (
-            <MenuItem onClick={onPublishAsImage} Icon={<PublishIcon />}>
+            <MenuItem onClick={onPublishAsImage} Icon={<PublishIcon />} shortcut="⌘P">
               Publish as image
             </MenuItem>
           )}
 
           <Divider />
 
-          <MenuItem onClick={onUploadIcon} Icon={<UploadIcon />}>
+          <MenuItem onClick={onUploadIcon} Icon={<UploadIcon />} shortcut="⌘U">
             Upload Icon
           </MenuItem>
 
           <MenuItem onClick={() => {
             uiStateActions.setDialog('FREEPIK_SEARCH');
             uiStateActions.setIsMainMenuOpen(false);
-          }} Icon={<SearchIcon />}>
+          }} Icon={<SearchIcon />} shortcut="⌘F">
             Search Freepik
           </MenuItem>
 

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useModelStore } from 'src/stores/modelStore';
 import { useUiStateStore } from 'src/stores/uiStateStore';
+import { useSceneStore } from 'src/stores/sceneStore';
 import { ModeActions, State, SlimMouseEvent } from 'src/types';
-import { getMouse, getItemAtTile } from 'src/utils';
+import { getMouse, getItemAtTile, generateId, CoordsUtils } from 'src/utils';
 import { useResizeObserver } from 'src/hooks/useResizeObserver';
 import { useScene } from 'src/hooks/useScene';
 import { Cursor } from './modes/Cursor';
@@ -162,19 +163,142 @@ export const useInteractionManager = () => {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // Option/Altキーが押された時、一時的にPanモードに切り替え（ダイアログが開いていない時のみ）
-      if (e.altKey && !e.repeat && uiState.mode.type !== 'PAN' && !uiState.dialog) {
+      // Shiftキーが押された時、一時的にPanモードに切り替え（ダイアログが開いていない時のみ）
+      if (e.shiftKey && !e.repeat && uiState.mode.type !== 'PAN' && !uiState.dialog) {
         e.preventDefault();
         uiState.actions.setTemporaryMode({
           type: 'PAN',
           showCursor: false
         });
       }
+
+      // Delete/Backspaceキーで選択中のアイテムを削除（ダイアログが開いていない時のみ）
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !uiState.dialog) {
+        // テキストボックス編集中は削除しない
+        if (uiState.mode.type === 'TEXTBOX') return;
+
+        const selectedItems = [];
+        if (uiState.itemControls) {
+          selectedItems.push(uiState.itemControls);
+        }
+        if (uiState.mode.type === 'DRAG_ITEMS' && uiState.mode.items) {
+          selectedItems.push(...uiState.mode.items);
+        }
+
+        if (selectedItems.length > 0) {
+          e.preventDefault();
+          selectedItems.forEach(item => {
+            if (item.type === 'ITEM') {
+              scene.deleteViewItem(item.id);
+            } else if (item.type === 'CONNECTOR') {
+              scene.deleteConnector(item.id);
+            } else if (item.type === 'RECTANGLE') {
+              scene.deleteRectangle(item.id);
+            } else if (item.type === 'TEXTBOX') {
+              scene.deleteTextBox(item.id);
+            }
+          });
+          // Clear selection after deletion
+          uiState.actions.setItemControls(null);
+        }
+      }
+
+      // Ctrl/Cmd+D で選択中のアイテムを複製（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && !uiState.dialog) {
+        const selectedItems = [];
+        if (uiState.itemControls && uiState.itemControls.type !== 'ADD_ITEM') {
+          selectedItems.push(uiState.itemControls);
+        }
+        if (uiState.mode.type === 'DRAG_ITEMS' && uiState.mode.items) {
+          selectedItems.push(...uiState.mode.items);
+        }
+
+        if (selectedItems.length > 0) {
+          e.preventDefault();
+          let newItem = null;
+
+          const item = selectedItems[0]; // For now, duplicate only the first item
+          if (item.type === 'ITEM') {
+            const viewItem = scene.items.find(i => i.id === item.id);
+            if (viewItem) {
+              const newViewItem = {
+                ...viewItem,
+                id: generateId(),
+                tile: CoordsUtils.add(viewItem.tile, { x: 1, y: 1 })
+              };
+              scene.createViewItem(newViewItem);
+              newItem = { type: 'ITEM' as const, id: newViewItem.id };
+            }
+          } else if (item.type === 'CONNECTOR') {
+            const connector = scene.connectors.find(c => c.id === item.id);
+            if (connector) {
+              const newConnector = {
+                ...connector,
+                id: generateId()
+              };
+              scene.createConnector(newConnector);
+              newItem = { type: 'CONNECTOR' as const, id: newConnector.id };
+            }
+          } else if (item.type === 'RECTANGLE') {
+            const rectangle = scene.rectangles.find(r => r.id === item.id);
+            if (rectangle) {
+              const newRectangle = {
+                ...rectangle,
+                id: generateId(),
+                from: CoordsUtils.add(rectangle.from, { x: 1, y: 1 }),
+                to: CoordsUtils.add(rectangle.to, { x: 1, y: 1 })
+              };
+              scene.createRectangle(newRectangle);
+              newItem = { type: 'RECTANGLE' as const, id: newRectangle.id };
+            }
+          } else if (item.type === 'TEXTBOX') {
+            const textBox = scene.textBoxes.find(t => t.id === item.id);
+            if (textBox) {
+              const newTextBox = {
+                ...textBox,
+                id: generateId(),
+                tile: CoordsUtils.add(textBox.tile, { x: 1, y: 1 })
+              };
+              scene.createTextBox(newTextBox);
+              newItem = { type: 'TEXTBOX' as const, id: newTextBox.id };
+            }
+          }
+
+          // Select the newly duplicated item
+          if (newItem) {
+            uiState.actions.setItemControls(newItem);
+          }
+        }
+      }
+
+      // Ctrl/Cmd+T で選択中のアイテムを水平反転（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 't' && !uiState.dialog) {
+        if (uiState.itemControls && uiState.itemControls.type === 'ITEM') {
+          e.preventDefault();
+          const itemId = uiState.itemControls.id;
+          const viewItem = scene.items.find(i => i.id === itemId);
+          if (viewItem) {
+            scene.updateViewItem(viewItem.id, { flipHorizontal: !viewItem.flipHorizontal });
+          }
+        }
+      }
+
+      // Ctrl/Cmd+E でExport（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 'e' && !uiState.dialog) {
+        e.preventDefault();
+        uiState.actions.setDialog('EXPORT_IMAGE');
+      }
+
+      // Ctrl/Cmd+P でPublish（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p' && !uiState.dialog) {
+        e.preventDefault();
+        uiState.actions.setDialog('PUBLISH_IMAGE');
+      }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      // Option/Altキーが離された時、元のモードに戻る（ダイアログが開いていない時のみ）
-      if (e.key === 'Alt' && !uiState.dialog) {
+      // Shiftキーが離された時、元のモードに戻る（ダイアログが開いていない時のみ）
+      if (e.key === 'Shift' && !uiState.dialog) {
         e.preventDefault();
         uiState.actions.clearTemporaryMode();
       }

@@ -111,7 +111,7 @@ export const NodeSettings = ({
               }}
             />
           }
-          label="Flip horizontally"
+          label="Flip horizontally (⌘T)"
         />
         <FormControlLabel
           control={
@@ -131,8 +131,9 @@ export const NodeSettings = ({
             variant="contained"
             size="small"
             onClick={onCopy}
+            title="Duplicate (⌘D)"
           >
-            Copy
+            Duplicate
           </Button>
           <DeleteButton onClick={onDeleted} />
         </Stack>

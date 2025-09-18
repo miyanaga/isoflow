@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Stack } from '@mui/material';
 import {
   PanToolOutlined as PanToolIcon,
@@ -43,12 +43,73 @@ export const ToolMenu = () => {
     });
   }, [uiStateStoreActions, createTextBox, mousePosition]);
 
+  // Add keyboard shortcuts for Cmd+1 through Cmd+6
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+
+      switch (e.key) {
+        case '1':
+          e.preventDefault();
+          uiStateStoreActions.setMode({
+            type: 'CURSOR',
+            showCursor: true,
+            mousedownItem: null
+          });
+          break;
+        case '2':
+          e.preventDefault();
+          uiStateStoreActions.setMode({
+            type: 'PAN',
+            showCursor: false
+          });
+          uiStateStoreActions.setItemControls(null);
+          break;
+        case '3':
+          e.preventDefault();
+          uiStateStoreActions.setItemControls({
+            type: 'ADD_ITEM'
+          });
+          uiStateStoreActions.setMode({
+            type: 'PLACE_ICON',
+            showCursor: true,
+            id: null
+          });
+          break;
+        case '4':
+          e.preventDefault();
+          uiStateStoreActions.setMode({
+            type: 'RECTANGLE.DRAW',
+            showCursor: true,
+            id: null
+          });
+          break;
+        case '5':
+          e.preventDefault();
+          uiStateStoreActions.setMode({
+            type: 'CONNECTOR',
+            id: null,
+            showCursor: true
+          });
+          break;
+        case '6':
+          e.preventDefault();
+          createTextBoxProxy();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [uiStateStoreActions, createTextBoxProxy]);
+
   return (
     <UiElement>
       <Stack direction="row">
         <IconButton
           name="Select"
           Icon={<NearMeIcon />}
+          shortcut="⌘1"
           onClick={() => {
             uiStateStoreActions.setMode({
               type: 'CURSOR',
@@ -61,6 +122,7 @@ export const ToolMenu = () => {
         <IconButton
           name="Pan"
           Icon={<PanToolIcon />}
+          shortcut="⌘2"
           onClick={() => {
             uiStateStoreActions.setMode({
               type: 'PAN',
@@ -74,6 +136,7 @@ export const ToolMenu = () => {
         <IconButton
           name="Add item"
           Icon={<AddIcon />}
+          shortcut="⌘3"
           onClick={() => {
             uiStateStoreActions.setItemControls({
               type: 'ADD_ITEM'
@@ -89,6 +152,7 @@ export const ToolMenu = () => {
         <IconButton
           name="Rectangle"
           Icon={<CropSquareIcon />}
+          shortcut="⌘4"
           onClick={() => {
             uiStateStoreActions.setMode({
               type: 'RECTANGLE.DRAW',
@@ -101,6 +165,7 @@ export const ToolMenu = () => {
         <IconButton
           name="Connector"
           Icon={<ConnectorIcon />}
+          shortcut="⌘5"
           onClick={() => {
             uiStateStoreActions.setMode({
               type: 'CONNECTOR',
@@ -113,6 +178,7 @@ export const ToolMenu = () => {
         <IconButton
           name="Text"
           Icon={<TitleIcon />}
+          shortcut="⌘6"
           onClick={createTextBoxProxy}
           isActive={mode.type === 'TEXTBOX'}
         />

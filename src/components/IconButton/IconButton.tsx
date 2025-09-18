@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Button, Box, useTheme } from '@mui/material';
+import { Button, Box, useTheme, Typography } from '@mui/material';
 import Tooltip, { TooltipProps } from '@mui/material/Tooltip';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   tooltipPosition?: TooltipProps['placement'];
   disabled?: boolean;
+  shortcut?: string;
 }
 
 export const IconButton = ({
@@ -17,7 +18,8 @@ export const IconButton = ({
   onClick,
   isActive = false,
   disabled = false,
-  tooltipPosition = 'bottom'
+  tooltipPosition = 'bottom',
+  shortcut
 }: Props) => {
   const theme = useTheme();
   const iconColor = useMemo(() => {
@@ -52,7 +54,9 @@ export const IconButton = ({
           minWidth: 'auto',
           bgcolor: isActive ? 'primary.light' : undefined,
           p: 0,
-          m: 0
+          m: 0,
+          flexDirection: 'column',
+          justifyContent: 'center'
         }}
       >
         <Box
@@ -67,6 +71,19 @@ export const IconButton = ({
         >
           {Icon}
         </Box>
+        {shortcut && (
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: '9px',
+              color: iconColor,
+              lineHeight: 1,
+              mt: 0.25
+            }}
+          >
+            {shortcut}
+          </Typography>
+        )}
       </Button>
     </Tooltip>
   );
