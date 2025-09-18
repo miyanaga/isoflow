@@ -33,6 +33,7 @@ const publishManager = new PublishManager({
   sshHost: process.env.SSH_HOST,
   sshUser: process.env.SSH_USER,
   sshPrivateKeyPath: process.env.SSH_PRIVATE_KEY_PATH,
+  sshPrivateKeyBase64: process.env.SSH_PRIVATE_KEY_BASE64,
   sshBasePath: process.env.SSH_BASE_PATH,
   sshPublishUrl: process.env.SSH_PUBLISH_URL
 })

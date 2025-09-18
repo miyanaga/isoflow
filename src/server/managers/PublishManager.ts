@@ -1,27 +1,67 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import * as os from 'os'
 import { Client } from 'ssh2'
 
 export interface PublishConfig {
   sshHost?: string
   sshUser?: string
   sshPrivateKeyPath?: string
+  sshPrivateKeyBase64?: string
   sshBasePath?: string
   sshPublishUrl?: string
 }
 
 export class PublishManager {
   private config: PublishConfig
+  private tempKeyPath?: string
 
   constructor(config: PublishConfig) {
     this.config = config
+    this.setupPrivateKey()
+  }
+
+  private async setupPrivateKey(): Promise<void> {
+    // If SSH_PRIVATE_KEY_BASE64 is provided, decode and save to temp file
+    if (this.config.sshPrivateKeyBase64) {
+      try {
+        const keyData = Buffer.from(this.config.sshPrivateKeyBase64, 'base64').toString('utf-8')
+
+        // Create temp file for the private key
+        const tempDir = os.tmpdir()
+        this.tempKeyPath = path.join(tempDir, `ssh_key_${process.pid}_${Date.now()}`)
+
+        // Write key to temp file with proper permissions
+        await fs.writeFile(this.tempKeyPath, keyData, { mode: 0o600 })
+
+        // Override the sshPrivateKeyPath with temp path
+        this.config.sshPrivateKeyPath = this.tempKeyPath
+
+        // Clean up temp key on process exit
+        process.on('exit', () => this.cleanupTempKey())
+        process.on('SIGINT', () => this.cleanupTempKey())
+        process.on('SIGTERM', () => this.cleanupTempKey())
+
+        console.log('SSH private key loaded from base64 environment variable')
+      } catch (error) {
+        console.error('Failed to setup SSH private key from base64:', error)
+      }
+    }
+  }
+
+  private cleanupTempKey(): void {
+    if (this.tempKeyPath) {
+      try {
+        fs.unlink(this.tempKeyPath).catch(() => {})
+      } catch {}
+    }
   }
 
   isAvailable(): boolean {
     return !!(
       this.config.sshHost &&
       this.config.sshUser &&
-      this.config.sshPrivateKeyPath &&
+      (this.config.sshPrivateKeyPath || this.config.sshPrivateKeyBase64) &&
       this.config.sshBasePath &&
       this.config.sshPublishUrl
     )
@@ -45,8 +85,17 @@ export class PublishManager {
       throw new Error('SSH configuration not complete')
     }
 
+    // Ensure private key is set up (for async initialization)
+    if (this.config.sshPrivateKeyBase64 && !this.config.sshPrivateKeyPath) {
+      await this.setupPrivateKey()
+    }
+
+    if (!this.config.sshPrivateKeyPath) {
+      throw new Error('SSH private key not available')
+    }
+
     // Read private key
-    const privateKey = await fs.readFile(this.config.sshPrivateKeyPath!, 'utf8')
+    const privateKey = await fs.readFile(this.config.sshPrivateKeyPath, 'utf8')
 
     // Create full remote path
     const remotePath = path.posix.join(this.config.sshBasePath!, filePath)
