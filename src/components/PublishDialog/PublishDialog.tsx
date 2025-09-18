@@ -64,7 +64,7 @@ const generateDefaultPath = (title: string, viewName: string): string => {
   return `${year}/${month}/${sanitizedTitle}-${sanitizedView}-${timestamp}.png`;
 };
 
-export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
+export const PublishDialog = ({ onClose, quality = 3.0 }: Props) => {
   const containerRef = useRef<HTMLDivElement>();
   const debounceRef = useRef<NodeJS.Timeout>();
   const currentView = useUiStateStore((state) => state.view);
@@ -290,7 +290,7 @@ export const PublishDialog = ({ onClose, quality = 1.5 }: Props) => {
                         renderer={{
                           showGrid: false,
                           backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
-                          forceZoom: 1.0
+                          forceZoom: 2.0
                         }}
                       />
                     </Box>

@@ -39,7 +39,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
+export const ExportImageDialog = ({ onClose, quality = 3.0 }: Props) => {
   const containerRef = useRef<HTMLDivElement>();
   const debounceRef = useRef<NodeJS.Timeout>();
   const currentView = useUiStateStore((state) => {
@@ -176,7 +176,7 @@ export const ExportImageDialog = ({ onClose, quality = 1.5 }: Props) => {
                     renderer={{
                       showGrid,
                       backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
-                      forceZoom: 1.0
+                      forceZoom: 2.0
                     }}
                   />
                 </Box>
