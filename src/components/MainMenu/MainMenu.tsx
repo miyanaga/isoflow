@@ -15,7 +15,8 @@ import {
   Edit as EditIcon,
   Upload as UploadIcon,
   Settings as SettingsIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
@@ -184,6 +185,28 @@ export const MainMenu = () => {
     uiStateActions.setIsMainMenuOpen(false);
   }, [modelActions, uiStateActions]);
 
+  const onDuplicateView = useCallback((viewId: string) => {
+    const viewToDuplicate = views.find(v => v.id === viewId);
+    if (!viewToDuplicate) return;
+
+    const defaultName = `${viewToDuplicate.name} 2`;
+    const name = window.prompt('Enter name for duplicated view:', defaultName);
+
+    if (!name) return;
+
+    // Check if name already exists
+    if (views.some(v => v.name === name)) {
+      alert('A view with this name already exists. Please choose a different name.');
+      return;
+    }
+
+    const newViewId = modelActions.duplicateView(viewId, name);
+    if (newViewId) {
+      uiStateActions.setView(newViewId);
+      uiStateActions.setIsMainMenuOpen(false);
+    }
+  }, [views, modelActions, uiStateActions]);
+
   const onEditViews = useCallback(() => {
     uiStateActions.setIsMainMenuOpen(false);
     uiStateActions.setDialog('EDIT_VIEWS');
@@ -316,6 +339,9 @@ export const MainMenu = () => {
               ))}
               <MenuItem onClick={onAddView} Icon={<AddIcon />}>
                 Add New View
+              </MenuItem>
+              <MenuItem onClick={() => onDuplicateView(currentViewId)} Icon={<ContentCopyIcon />}>
+                Duplicate Current View
               </MenuItem>
               <MenuItem onClick={onEditViews} Icon={<EditIcon />}>
                 Edit Views

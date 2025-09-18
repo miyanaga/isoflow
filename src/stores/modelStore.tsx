@@ -29,6 +29,27 @@ const initialState = () => {
           set({ views: [...currentViews, newView] });
           return newView.id;
         },
+        duplicateView: (viewId: string, name: string) => {
+          const currentViews = get().views;
+          const viewToDuplicate = currentViews.find(v => v.id === viewId);
+          if (!viewToDuplicate) {
+            return null;
+          }
+
+          // Check if name already exists
+          if (currentViews.some(v => v.name === name)) {
+            return null;
+          }
+
+          const newView: View = {
+            ...viewToDuplicate,
+            id: nanoid(),
+            name,
+            lastUpdated: new Date().toISOString()
+          };
+          set({ views: [...currentViews, newView] });
+          return newView.id;
+        },
         deleteView: (viewId: string) => {
           const currentViews = get().views;
           if (currentViews.length <= 1) {

@@ -43,6 +43,7 @@ export type ModelStore = Model & {
     setTitle: (title: string) => void;
     setDocumentName: (name: string) => void;
     addView: (name?: string) => string;
+    duplicateView: (viewId: string, name: string) => string | null;
     deleteView: (viewId: string) => boolean;
     updateView: (viewId: string, updates: Partial<View>) => void;
     reorderViews: (views: View[]) => void;
