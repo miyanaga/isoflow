@@ -15,18 +15,22 @@ dotenv.config()
 const app: express.Application = express()
 const server = http.createServer(app)
 
-app.use(cors())
-
-// Configure body parser for different content types
-app.use('/publish', express.raw({ type: 'image/png', limit: '50mb' }))
-app.use(json({ limit: '10mb' }))
-app.use(urlencoded({ extended: true, limit: '10mb' }))
-
-const API_URL = process.env.API_URL || 'http://localhost:3080'
-const url = new URL(API_URL)
-const PORT = parseInt(url.port) || 3080
+const PORT = parseInt(process.env.PORT || '3000')
 const DATA_DIR = process.env.DATA_DIR || './data'
 
+// Serve static files from dist-app directory
+const distPath = path.resolve(__dirname, '../../dist-app')
+console.log('Serving static files from:', distPath)
+
+// API routes come first
+app.use(cors())
+
+// Configure body parser for different content types for API routes
+app.use('/api/publish', express.raw({ type: 'image/png', limit: '50mb' }))
+app.use('/api', json({ limit: '10mb' }))
+app.use('/api', urlencoded({ extended: true, limit: '10mb' }))
+
+// Initialize managers
 const documentManager = new DocumentManager(DATA_DIR)
 const iconManager = new IconManager(DATA_DIR)
 const publishManager = new PublishManager({
@@ -48,7 +52,8 @@ const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextF
   Promise.resolve(fn(req, res, next)).catch(next)
 }
 
-app.post('/docs/save', asyncHandler(async (req: Request, res: Response) => {
+// API routes - all prefixed with /api
+app.post('/api/docs/save', asyncHandler(async (req: Request, res: Response) => {
   const { name, content } = req.body
   if (!name || !content) {
     return res.status(400).json({ error: 'Name and content are required' })
@@ -62,7 +67,7 @@ app.post('/docs/save', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/docs/exists', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/docs/exists', asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.query
   if (!name) {
     return res.status(400).json({ error: 'Name is required' })
@@ -76,7 +81,7 @@ app.get('/docs/exists', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.delete('/docs/delete', asyncHandler(async (req: Request, res: Response) => {
+app.delete('/api/docs/delete', asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.query
   if (!name) {
     return res.status(400).json({ error: 'Name is required' })
@@ -94,7 +99,7 @@ app.delete('/docs/delete', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/docs/index', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/docs/index', asyncHandler(async (req: Request, res: Response) => {
   const { q } = req.query
 
   try {
@@ -105,7 +110,7 @@ app.get('/docs/index', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/docs/load', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/docs/load', asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.query
   if (!name) {
     return res.status(400).json({ error: 'Name is required' })
@@ -123,7 +128,7 @@ app.get('/docs/load', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.post('/icons/save', asyncHandler(async (req: Request, res: Response) => {
+app.post('/api/icons/save', asyncHandler(async (req: Request, res: Response) => {
   const { name, svg } = req.body
   if (!name || !svg) {
     return res.status(400).json({ error: 'Name and svg are required' })
@@ -137,7 +142,7 @@ app.post('/icons/save', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/icons/exists', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/icons/exists', asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.query
   if (!name) {
     return res.status(400).json({ error: 'Name is required' })
@@ -151,7 +156,7 @@ app.get('/icons/exists', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.delete('/icons/delete', asyncHandler(async (req: Request, res: Response) => {
+app.delete('/api/icons/delete', asyncHandler(async (req: Request, res: Response) => {
   const { name } = req.query
   if (!name) {
     return res.status(400).json({ error: 'Name is required' })
@@ -169,7 +174,7 @@ app.delete('/icons/delete', asyncHandler(async (req: Request, res: Response) => 
   }
 }))
 
-app.get('/icons/index', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/icons/index', asyncHandler(async (req: Request, res: Response) => {
   const { q } = req.query
 
   try {
@@ -180,7 +185,7 @@ app.get('/icons/index', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/icons/sync', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/icons/sync', asyncHandler(async (req: Request, res: Response) => {
   const { lastUpdated } = req.query
 
   try {
@@ -191,7 +196,7 @@ app.get('/icons/sync', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.put('/icons/rename', asyncHandler(async (req: Request, res: Response) => {
+app.put('/api/icons/rename', asyncHandler(async (req: Request, res: Response) => {
   const { oldName, newName } = req.body
   if (!oldName || !newName) {
     return res.status(400).json({ error: 'Old name and new name are required' })
@@ -205,11 +210,11 @@ app.put('/icons/rename', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/publish/available', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/publish/available', asyncHandler(async (req: Request, res: Response) => {
   res.json({ available: publishManager.isAvailable() })
 }))
 
-app.get('/publish/url', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/publish/url', asyncHandler(async (req: Request, res: Response) => {
   const { path: filePath } = req.query
 
   if (!filePath) {
@@ -228,7 +233,7 @@ app.get('/publish/url', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.post('/publish', asyncHandler(async (req: Request, res: Response) => {
+app.post('/api/publish', asyncHandler(async (req: Request, res: Response) => {
   const { path: filePath } = req.query
 
   if (!filePath) {
@@ -255,7 +260,7 @@ app.post('/publish', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.get('/freepik/search', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/freepik/search', asyncHandler(async (req: Request, res: Response) => {
   const { query, per_page, page, order, shape, thumbnail_size } = req.query
 
   if (!query) {
@@ -283,7 +288,7 @@ app.get('/freepik/search', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
-app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => {
+app.post('/api/icons/download', asyncHandler(async (req: Request, res: Response) => {
   const { iconId, name, title, isIsometric } = req.body
 
   if (!iconId || !name) {
@@ -299,8 +304,6 @@ app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => 
     let svgContent = await freepikManager.downloadIconAsString(iconId)
 
     // Add metadata to SVG to indicate if it's isometric
-    // Since this is server-side Node.js, we need to use a different approach
-    // We'll add the metadata as an attribute in the SVG string
     if (svgContent.includes('<svg')) {
       const isometricAttr = ` data-isometric="${isIsometric ? 'true' : 'false'}"`
       svgContent = svgContent.replace('<svg', `<svg${isometricAttr}`)
@@ -320,9 +323,24 @@ app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => 
   }
 }))
 
-app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Server error:', error)
+// Error handler for API routes
+app.use('/api', (error: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('API error:', error)
   res.status(500).json({ error: 'Internal server error' })
+})
+
+// Serve static files
+app.use(express.static(distPath))
+
+// Catch-all route - serve index.html for client-side routing
+app.use((req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api')) {
+    return next()
+  }
+
+  // For all other routes, serve index.html
+  res.sendFile(path.join(distPath, 'index.html'))
 })
 
 async function startServer() {
@@ -331,8 +349,9 @@ async function startServer() {
 
     return new Promise<http.Server>((resolve, reject) => {
       server.listen(PORT, () => {
-        console.log(`Server running at ${API_URL}`)
-        console.log(`Icons sync endpoint: GET /icons/sync`)
+        console.log(`All-in-one server running at http://localhost:${PORT}`)
+        console.log(`API endpoints available at: http://localhost:${PORT}/api/*`)
+        console.log(`Static files served from: ${distPath}`)
         console.log(`Data directory: ${path.resolve(DATA_DIR)}`)
         resolve(server)
       })
@@ -345,19 +364,41 @@ async function startServer() {
   }
 }
 
-// Only install signal handler when running directly
-if (require.main === module) {
-  startServer().then(() => {
-    process.on('SIGINT', () => {
-      console.log('\nShutting down server...')
-      server.close(() => {
-        process.exit(0)
-      })
+// Handle graceful shutdown
+let isShuttingDown = false
+
+async function shutdown() {
+  if (isShuttingDown) {
+    return
+  }
+  isShuttingDown = true
+
+  console.log('\nShutting down server...')
+
+  return new Promise<void>((resolve) => {
+    server.close(() => {
+      console.log('Server stopped')
+      resolve()
     })
-  }).catch((error) => {
+  })
+}
+
+process.on('SIGINT', async () => {
+  await shutdown()
+  process.exit(0)
+})
+
+process.on('SIGTERM', async () => {
+  await shutdown()
+  process.exit(0)
+})
+
+// Start the server
+if (require.main === module) {
+  startServer().catch((error) => {
     console.error('Failed to start server:', error)
     process.exit(1)
   })
 }
 
-export { app, server, startServer, initialize }
+export { app, server, startServer }

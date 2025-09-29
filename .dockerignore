@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Node modules (we'll install fresh in Docker)
+node_modules
+
+# Development files
+webpack/build
+src/**/*.test.ts
+src/**/*.test.tsx
+__tests__
+
+# Build artifacts that we don't need
+dist
+*.log
+
+# Development config
+.vscode
+.idea
+
+# Temporary files
+*.tmp
+.DS_Store
+
+# Documentation
+README.md
+CLAUDE.md
+*.md
+
+# Scripts that aren't needed in Docker
+docker.sh

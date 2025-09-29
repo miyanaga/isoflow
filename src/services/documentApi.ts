@@ -6,7 +6,7 @@ declare const process: {
   };
 };
 
-const SERVER_URL = (typeof process !== 'undefined' && process.env?.SERVER_URL) || 'http://localhost:3080';
+const SERVER_URL = (typeof process !== 'undefined' && process.env?.SERVER_URL) || '/api';
 
 export interface DocumentInfo {
   name: string;
