@@ -10,40 +10,26 @@ VERSION=$(node -p "require('./package.json').version")
 
 echo "Building Docker image for $FULL_IMAGE"
 echo "Version: $VERSION"
+echo "Platform: linux/amd64 (forced)"
 
-# Build the image for amd64 platform
-echo "Building for amd64 platform..."
+# Ensure buildx is available and create/use a builder instance
+docker buildx create --use --name isoflow-builder 2>/dev/null || docker buildx use isoflow-builder
+
+# Build and push the image for amd64 platform only
+echo "Building and pushing for amd64 platform..."
 docker buildx build \
   --platform linux/amd64 \
   -t "$FULL_IMAGE:latest" \
   -t "$FULL_IMAGE:$VERSION" \
+  --push \
   .
 
 if [ $? -ne 0 ]; then
-  echo "Error: Docker build failed"
+  echo "Error: Docker build or push failed"
   exit 1
 fi
 
-echo "Build successful!"
-
-# Push both tags
-echo "Pushing $FULL_IMAGE:latest..."
-docker push "$FULL_IMAGE:latest"
-
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to push :latest tag"
-  exit 1
-fi
-
-echo "Pushing $FULL_IMAGE:$VERSION..."
-docker push "$FULL_IMAGE:$VERSION"
-
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to push :$VERSION tag"
-  exit 1
-fi
-
-echo "Successfully pushed both tags!"
+echo "Build and push successful!"
 echo "Images pushed:"
-echo "  - $FULL_IMAGE:latest"
-echo "  - $FULL_IMAGE:$VERSION"
+echo "  - $FULL_IMAGE:latest (amd64)"
+echo "  - $FULL_IMAGE:$VERSION (amd64)"

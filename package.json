@@ -1,6 +1,6 @@
 {
   "name": "isoflow",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": false,
   "description": "An open-source React component for drawing network diagrams.",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "server": "ts-node --project tsconfig.server.json src/server/index.ts",
     "server:dev": "nodemon --watch src/server --ext ts --exec ts-node --project tsconfig.server.json src/server/index.ts",
     "server:build": "tsc --project tsconfig.server.json",
-    "all-in-one": "concurrently --kill-others --names \"client,server\" -c \"blue,green\" \"yarn start\" \"yarn server:dev\""
+    "all-in-one": "API_URL=/api concurrently --kill-others --names \"client,server\" -c \"blue,green\" \"yarn start\" \"yarn server:dev\""
   },
   "devDependencies": {
     "@isoflow/isopacks": "^0.0.10",

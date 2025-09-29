@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  isoflow:
+    build: .
+    image: docker.lab.ideamans.com/isoflow:latest
+    ports:
+      - "3000:3000"
+      - "3080:3080"
+    environment:
+      - NODE_ENV=production
+      # API_URLを設定しない場合、docker-entrypoint.shで自動的にhttp://localhost:3080が設定されます
+      - API_URL=${API_URL}
+      - DATA_DIR=${DATA_DIR:-./data}
+    volumes:
+      - isoflow-data:/app/data
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    init: true  # Use tini for proper signal handling
+
+volumes:
+  isoflow-data:

@@ -12,8 +12,12 @@ RUN yarn install
 # Copy application source
 COPY . .
 
+# Copy and set executable permission for entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expose ports for both client and server
 EXPOSE 3000 3080
 
-# Start both client and server
-CMD ["yarn", "all-in-one"]
+# Use exec form to ensure PID 1 receives signals properly
+ENTRYPOINT ["docker-entrypoint.sh"]
