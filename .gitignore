@@ -24,3 +24,5 @@ yarn-error.log*
 data/
 
 .env
+
+dist-app
