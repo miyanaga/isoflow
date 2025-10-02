@@ -172,11 +172,8 @@ export const useInteractionManager = () => {
         });
       }
 
-      // Delete/Backspaceキーで選択中のアイテムを削除（ダイアログが開いていない時のみ）
-      if ((e.key === 'Delete' || e.key === 'Backspace') && !uiState.dialog) {
-        // テキストボックス編集中は削除しない
-        if (uiState.mode.type === 'TEXTBOX') return;
-
+      // Ctrl/Cmd+X で選択中のアイテムを削除（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 'x' && !uiState.dialog) {
         const selectedItems = [];
         if (uiState.itemControls) {
           selectedItems.push(uiState.itemControls);
