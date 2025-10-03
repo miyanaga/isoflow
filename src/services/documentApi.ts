@@ -31,8 +31,14 @@ export class DocumentApi {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to save document');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save document');
+      } else {
+        const text = await response.text();
+        throw new Error(`Failed to save document (${response.status}): ${text.substring(0, 100)}`);
+      }
     }
   }
 
@@ -40,8 +46,14 @@ export class DocumentApi {
     const response = await fetch(`${this.baseUrl}/docs/exists?name=${encodeURIComponent(name)}`);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to check document existence');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to check document existence');
+      } else {
+        const text = await response.text();
+        throw new Error(`Failed to check document existence (${response.status}): ${text.substring(0, 100)}`);
+      }
     }
 
     const data = await response.json();
@@ -54,8 +66,14 @@ export class DocumentApi {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete document');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete document');
+      } else {
+        const text = await response.text();
+        throw new Error(`Failed to delete document (${response.status}): ${text.substring(0, 100)}`);
+      }
     }
   }
 
@@ -67,8 +85,14 @@ export class DocumentApi {
     const response = await fetch(url);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch document list');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch document list');
+      } else {
+        const text = await response.text();
+        throw new Error(`Failed to fetch document list (${response.status}): ${text.substring(0, 100)}`);
+      }
     }
 
     return response.json();
@@ -78,8 +102,14 @@ export class DocumentApi {
     const response = await fetch(`${this.baseUrl}/docs/load?name=${encodeURIComponent(name)}`);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to load document');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to load document');
+      } else {
+        const text = await response.text();
+        throw new Error(`Failed to load document (${response.status}): ${text.substring(0, 100)}`);
+      }
     }
 
     return response.json();

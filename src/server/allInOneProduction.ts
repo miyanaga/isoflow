@@ -26,9 +26,9 @@ console.log('Serving static files from:', distPath)
 app.use(cors())
 
 // Configure body parser for different content types for API routes
-app.use('/api/publish', express.raw({ type: 'image/png', limit: '50mb' }))
-app.use('/api', json({ limit: '10mb' }))
-app.use('/api', urlencoded({ extended: true, limit: '10mb' }))
+app.use('/api/publish', express.raw({ type: 'image/png', limit: '1gb' }))
+app.use('/api', json({ limit: '1gb' }))
+app.use('/api', urlencoded({ extended: true, limit: '1gb' }))
 
 // Initialize managers
 const documentManager = new DocumentManager(DATA_DIR)
@@ -54,15 +54,21 @@ const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextF
 
 // API routes - all prefixed with /api
 app.post('/api/docs/save', asyncHandler(async (req: Request, res: Response) => {
+  console.log('[API] POST /api/docs/save - Request received')
+  console.log('[API] Body:', JSON.stringify(req.body).substring(0, 200))
+
   const { name, content } = req.body
   if (!name || !content) {
+    console.error('[API] Missing required fields - name:', !!name, 'content:', !!content)
     return res.status(400).json({ error: 'Name and content are required' })
   }
 
   try {
     await documentManager.save(name, content)
+    console.log(`[API] Document saved successfully: ${name}`)
     res.json({ success: true })
   } catch (error: any) {
+    console.error('[API] Error saving document:', error)
     res.status(500).json({ error: error.message })
   }
 }))
@@ -323,24 +329,32 @@ app.post('/api/icons/download', asyncHandler(async (req: Request, res: Response)
   }
 }))
 
-// Error handler for API routes
-app.use('/api', (error: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('API error:', error)
-  res.status(500).json({ error: 'Internal server error' })
-})
-
 // Serve static files
 app.use(express.static(distPath))
 
 // Catch-all route - serve index.html for client-side routing
 app.use((req, res, next) => {
-  // Skip API routes
+  // For API routes that didn't match, return 404
   if (req.path.startsWith('/api')) {
-    return next()
+    console.error(`[API] 404 - Route not found: ${req.method} ${req.path}`)
+    return res.status(404).json({ error: 'API endpoint not found' })
   }
 
   // For all other routes, serve index.html
   res.sendFile(path.join(distPath, 'index.html'))
+})
+
+// Global error handler (must be last, with 4 parameters)
+app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('Server error:', error)
+
+  // Return JSON error for API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(500).json({ error: error.message || 'Internal server error' })
+  }
+
+  // Return text error for non-API routes
+  res.status(500).send('Internal server error')
 })
 
 async function startServer() {

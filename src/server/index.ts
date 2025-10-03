@@ -18,9 +18,9 @@ const server = http.createServer(app)
 app.use(cors())
 
 // Configure body parser for different content types
-app.use('/publish', express.raw({ type: 'image/png', limit: '50mb' }))
-app.use(json({ limit: '10mb' }))
-app.use(urlencoded({ extended: true, limit: '10mb' }))
+app.use('/publish', express.raw({ type: 'image/png', limit: '1gb' }))
+app.use(json({ limit: '1gb' }))
+app.use(urlencoded({ extended: true, limit: '1gb' }))
 
 const API_URL = process.env.API_URL || 'http://localhost:3080'
 const url = new URL(API_URL)
