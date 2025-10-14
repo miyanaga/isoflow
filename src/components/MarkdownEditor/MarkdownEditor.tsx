@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import ReactQuill from 'react-quill';
 import { Box } from '@mui/material';
 
@@ -19,6 +19,8 @@ export const MarkdownEditor = ({
   height = 120,
   styles
 }: Props) => {
+  const quillRef = useRef<ReactQuill>(null);
+
   const modules = useMemo(() => {
     if (!readOnly)
       return {
@@ -54,6 +56,7 @@ export const MarkdownEditor = ({
       }}
     >
       <ReactQuill
+        ref={quillRef}
         theme="snow"
         value={value ?? ''}
         readOnly={readOnly}

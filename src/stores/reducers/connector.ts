@@ -39,12 +39,16 @@ export const syncConnector = (
       draft.scene = stateAfterDelete.scene;
       draft.model = stateAfterDelete.model;
     } else {
-      const path = getConnectorPath({
-        anchors: connector.value.anchors,
-        view: view.value
-      });
+      try {
+        const path = getConnectorPath({
+          anchors: connector.value.anchors,
+          view: view.value
+        });
 
-      draft.scene.connectors[connector.value.id] = { path };
+        draft.scene.connectors[connector.value.id] = { path };
+      } catch (error) {
+        console.error('Error getting connector path:', error);
+      }
     }
   });
 

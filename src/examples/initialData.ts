@@ -196,7 +196,7 @@ export const initialData: InitialData = {
   views: [
     {
       id: 'overview',
-      name: '概要',
+      name: 'Example',
       items: [
         {
           labelHeight: 80,
@@ -767,22 +767,6 @@ export const initialData: InitialData = {
           tile: { x: 2, y: -2 }
         }
       ]
-    },
-    {
-      id: 'detail',
-      name: '詳細',
-      items: [{ id: 'item1', tile: { x: 0, y: 0 }, labelHeight: 140 }],
-      connectors: [],
-      rectangles: [],
-      textBoxes: []
-    },
-    {
-      id: 'network',
-      name: 'ネットワーク構成',
-      items: [{ id: 'item1', tile: { x: 2, y: 2 }, labelHeight: 140 }],
-      connectors: [],
-      rectangles: [],
-      textBoxes: []
     }
   ]
 };

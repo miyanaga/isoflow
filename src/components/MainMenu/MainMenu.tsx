@@ -16,14 +16,18 @@ import {
   Upload as UploadIcon,
   Settings as SettingsIcon,
   Search as SearchIcon,
-  ContentCopy as ContentCopyIcon
+  ContentCopy as ContentCopyIcon,
+  ContentPaste as ContentPasteIcon
 } from '@mui/icons-material';
+import { nanoid } from 'nanoid';
 import { UiElement } from 'src/components/UiElement/UiElement';
 import { IconButton } from 'src/components/IconButton/IconButton';
 import { useUiStateStore } from 'src/stores/uiStateStore';
 import { exportAsJSON, modelFromModelStore, api } from 'src/utils';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
 import { useModelStore } from 'src/stores/modelStore';
+import { useScene } from 'src/hooks/useScene';
+import { useView } from 'src/hooks/useView';
 import { MenuItem } from './MenuItem';
 import { DocumentListDialog } from 'src/components/DocumentListDialog/DocumentListDialog';
 import { documentApi } from 'src/services/documentApi';
@@ -54,6 +58,8 @@ export const MainMenu = () => {
   });
   const initialDataManager = useInitialDataManager();
   const { load, clear } = initialDataManager;
+  const scene = useScene();
+  const { changeView } = useView();
 
   // Check if publish service is available
   useEffect(() => {
@@ -257,15 +263,17 @@ export const MainMenu = () => {
   }, [uiStateActions]);
 
   const onChangeView = useCallback((viewId: string) => {
-    uiStateActions.setView(viewId);
+    const model = modelActions.get();
+    changeView(viewId, model);
     uiStateActions.setIsMainMenuOpen(false);
-  }, [uiStateActions]);
+  }, [uiStateActions, modelActions, changeView]);
 
   const onAddView = useCallback(() => {
     const newViewId = modelActions.addView();
-    uiStateActions.setView(newViewId);
+    const updatedModel = modelActions.get();
+    changeView(newViewId, updatedModel);
     uiStateActions.setIsMainMenuOpen(false);
-  }, [modelActions, uiStateActions]);
+  }, [modelActions, uiStateActions, changeView]);
 
   const onDuplicateView = useCallback((viewId: string) => {
     const viewToDuplicate = views.find(v => v.id === viewId);
@@ -284,10 +292,178 @@ export const MainMenu = () => {
 
     const newViewId = modelActions.duplicateView(viewId, name);
     if (newViewId) {
-      uiStateActions.setView(newViewId);
+      const updatedModel = modelActions.get();
+      changeView(newViewId, updatedModel);
       uiStateActions.setIsMainMenuOpen(false);
     }
-  }, [views, modelActions, uiStateActions]);
+  }, [views, modelActions, uiStateActions, changeView]);
+
+  const onCopyCurrentView = useCallback(async () => {
+    const currentView = views.find(v => v.id === currentViewId);
+    if (!currentView) {
+      alert('No view selected to copy.');
+      return;
+    }
+
+    try {
+      // Collect the ModelItems that are referenced by this view
+      const modelItems = currentView.items.map(viewItem => {
+        return modelActions.get().items.find(mi => mi.id === viewItem.id);
+      }).filter(Boolean);
+
+      const viewDataWithModelItems = {
+        ...currentView,
+        modelItems
+      };
+
+      const viewData = JSON.stringify(viewDataWithModelItems, null, 2);
+      await navigator.clipboard.writeText(viewData);
+      alert('View copied to clipboard!');
+      uiStateActions.setIsMainMenuOpen(false);
+    } catch (err) {
+      console.error('Failed to copy view:', err);
+      alert('Failed to copy view to clipboard. Please check browser permissions.');
+    }
+  }, [views, currentViewId, modelActions, uiStateActions]);
+
+  const onPasteAndCreateView = useCallback(async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+
+      // Parse the view data
+      let viewData;
+      try {
+        viewData = JSON.parse(clipboardText);
+      } catch (parseErr) {
+        alert('Clipboard does not contain valid JSON data.');
+        return;
+      }
+
+      // Validate that it looks like a view
+      if (!viewData.id || !viewData.name || !Array.isArray(viewData.items)) {
+        alert('Clipboard data does not appear to be a valid view.');
+        return;
+      }
+
+      // Prompt for new view name
+      const defaultName = `${viewData.name} (Copy)`;
+      const name = window.prompt('Enter name for the new view:', defaultName);
+      if (!name) return;
+
+      // Check if name already exists
+      if (views.some(v => v.name === name)) {
+        alert('A view with this name already exists. Please choose a different name.');
+        return;
+      }
+
+      // Create a mapping of old IDs to new IDs
+      const idMap = new Map<string, string>();
+
+      // First, create the ModelItems if they exist
+      if (viewData.modelItems && Array.isArray(viewData.modelItems)) {
+        viewData.modelItems.forEach((modelItem: any) => {
+          const newId = nanoid();
+          idMap.set(modelItem.id, newId);
+          scene.createModelItem({
+            ...modelItem,
+            id: newId
+          });
+        });
+      }
+
+      // Generate new IDs for all ViewItems using the same ID map
+      const newItems = viewData.items.map((item: any) => {
+        const newId = idMap.get(item.id) || nanoid();
+        if (!idMap.has(item.id)) {
+          idMap.set(item.id, newId);
+        }
+        return {
+          ...item,
+          id: newId
+        };
+      });
+
+      // Generate new IDs for rectangles
+      const newRectangles = viewData.rectangles?.map((rect: any) => {
+        const newId = nanoid();
+        idMap.set(rect.id, newId);
+        return {
+          ...rect,
+          id: newId
+        };
+      }) || [];
+
+      // Generate new IDs for textBoxes
+      const newTextBoxes = viewData.textBoxes?.map((textBox: any) => {
+        const newId = nanoid();
+        idMap.set(textBox.id, newId);
+        return {
+          ...textBox,
+          id: newId
+        };
+      }) || [];
+
+      // Generate new IDs for connectors and update their anchor references
+      const newConnectors = viewData.connectors?.map((connector: any) => {
+        const newId = nanoid();
+        idMap.set(connector.id, newId);
+
+        // Update anchors array - map through each anchor and update the item reference
+        const newAnchors = connector.anchors?.map((anchor: any) => {
+          const newAnchorId = nanoid();
+
+          const newRef: any = {};
+
+          // Update item reference if it exists and is in idMap
+          if (anchor.ref?.item) {
+            const oldItemId = anchor.ref.item;
+            const newItemId = idMap.get(oldItemId);
+            newRef.item = newItemId || oldItemId;
+          }
+
+          // Keep tile reference as is (if it exists)
+          if (anchor.ref?.tile) {
+            newRef.tile = anchor.ref.tile;
+          }
+
+          return {
+            id: newAnchorId,
+            ref: newRef
+          };
+        }) || [];
+
+        return {
+          ...connector,
+          id: newId,
+          anchors: newAnchors
+        };
+      }) || [];
+
+      // Create the new view
+      const newView = {
+        id: nanoid(),
+        name,
+        description: viewData.description,
+        lastUpdated: new Date().toISOString(),
+        items: newItems,
+        rectangles: newRectangles,
+        connectors: newConnectors,
+        textBoxes: newTextBoxes
+      };
+
+      // Add the new view using the existing reorderViews action
+      modelActions.reorderViews([...views, newView]);
+
+      // Use changeView to properly sync the scene with the new view
+      const updatedModel = modelActions.get();
+      changeView(newView.id, updatedModel);
+
+      uiStateActions.setIsMainMenuOpen(false);
+    } catch (err) {
+      console.error('Failed to paste view:', err);
+      alert('Failed to paste view. Please make sure you have copied a valid view first.');
+    }
+  }, [views, modelActions, uiStateActions, scene, changeView]);
 
   const onEditViews = useCallback(() => {
     uiStateActions.setIsMainMenuOpen(false);
@@ -312,7 +488,7 @@ export const MainMenu = () => {
         })
       ),
       version: Boolean(mainMenuOptions.includes('VERSION')),
-      views: views.length > 1
+      views: views.length >= 1
     };
   }, [mainMenuOptions, views.length]);
 
@@ -425,6 +601,14 @@ export const MainMenu = () => {
               <MenuItem onClick={() => onDuplicateView(currentViewId)} Icon={<ContentCopyIcon />}>
                 Duplicate Current View
               </MenuItem>
+              <Divider />
+              <MenuItem onClick={onCopyCurrentView} Icon={<ContentCopyIcon />}>
+                Copy Current View
+              </MenuItem>
+              <MenuItem onClick={onPasteAndCreateView} Icon={<ContentPasteIcon />}>
+                Paste And Create New
+              </MenuItem>
+              <Divider />
               <MenuItem onClick={onEditViews} Icon={<EditIcon />}>
                 Edit Views
               </MenuItem>

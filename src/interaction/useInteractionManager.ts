@@ -217,14 +217,25 @@ export const useInteractionManager = () => {
           const item = selectedItems[0]; // For now, duplicate only the first item
           if (item.type === 'ITEM') {
             const viewItem = scene.items.find(i => i.id === item.id);
-            if (viewItem) {
+            const modelItem = model.items.find(mi => mi.id === item.id);
+            if (viewItem && modelItem) {
+              const newId = generateId();
+
+              // Create the ModelItem first
+              scene.createModelItem({
+                ...modelItem,
+                id: newId,
+                name: modelItem.name || 'Untitled'
+              });
+
+              // Then create the ViewItem
               const newViewItem = {
                 ...viewItem,
-                id: generateId(),
+                id: newId,
                 tile: CoordsUtils.add(viewItem.tile, { x: 1, y: 1 })
               };
               scene.createViewItem(newViewItem);
-              newItem = { type: 'ITEM' as const, id: newViewItem.id };
+              newItem = { type: 'ITEM' as const, id: newId };
             }
           } else if (item.type === 'CONNECTOR') {
             const connector = scene.connectors.find(c => c.id === item.id);
@@ -266,6 +277,209 @@ export const useInteractionManager = () => {
             uiState.actions.setItemControls(newItem);
           }
         }
+      }
+
+      // Ctrl/Cmd+C で選択中のアイテムをコピー（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && !uiState.dialog) {
+        const selectedItems = [];
+        if (uiState.itemControls && uiState.itemControls.type !== 'ADD_ITEM') {
+          selectedItems.push(uiState.itemControls);
+        }
+        if (uiState.mode.type === 'DRAG_ITEMS' && uiState.mode.items) {
+          selectedItems.push(...uiState.mode.items);
+        }
+
+        if (selectedItems.length > 0) {
+          e.preventDefault();
+          const copyData: any = {
+            items: [],
+            modelItems: [],
+            connectors: [],
+            rectangles: [],
+            textBoxes: []
+          };
+
+          // Collect all selected items data
+          selectedItems.forEach(item => {
+            if (item.type === 'ITEM') {
+              const viewItem = scene.items.find(i => i.id === item.id);
+              if (viewItem) {
+                copyData.items.push(viewItem);
+                // Also copy the corresponding ModelItem
+                const modelItem = model.items.find(mi => mi.id === item.id);
+                if (modelItem) {
+                  copyData.modelItems.push(modelItem);
+                }
+              }
+            } else if (item.type === 'CONNECTOR') {
+              const connector = scene.connectors.find(c => c.id === item.id);
+              console.log('Copying connector:', connector);
+              if (connector) {
+                // Only copy the model data (id, color, anchors), not the computed path
+                const connectorData = {
+                  id: connector.id,
+                  color: connector.color,
+                  anchors: connector.anchors
+                };
+                console.log('Connector data to copy:', connectorData);
+                copyData.connectors.push(connectorData);
+              }
+            } else if (item.type === 'RECTANGLE') {
+              const rectangle = scene.rectangles.find(r => r.id === item.id);
+              if (rectangle) copyData.rectangles.push(rectangle);
+            } else if (item.type === 'TEXTBOX') {
+              const textBox = scene.textBoxes.find(t => t.id === item.id);
+              if (textBox) copyData.textBoxes.push(textBox);
+            }
+          });
+
+          // Copy to clipboard
+          navigator.clipboard.writeText(JSON.stringify(copyData))
+            .then(() => {
+              console.log('Items copied to clipboard');
+            })
+            .catch(err => {
+              console.error('Failed to copy items:', err);
+            });
+        }
+      }
+
+      // Ctrl/Cmd+V で選択中のアイテムを貼り付け（ダイアログが開いていない時のみ）
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && !uiState.dialog) {
+        e.preventDefault();
+        navigator.clipboard.readText()
+          .then(text => {
+            try {
+              const copyData = JSON.parse(text);
+
+              // Validate that it looks like copied items
+              if (!copyData.items && !copyData.connectors && !copyData.rectangles && !copyData.textBoxes) {
+                return; // Not our clipboard data
+              }
+
+              // Create a mapping of old IDs to new IDs
+              const idMap = new Map<string, string>();
+              let newItem: { type: string; id: string } | null = null;
+
+              // Paste items (first create ModelItems, then ViewItems)
+              if (copyData.items && copyData.items.length > 0) {
+                copyData.items.forEach((viewItem: any, index: number) => {
+                  const newId = generateId();
+                  idMap.set(viewItem.id, newId);
+
+                  // Create the corresponding ModelItem first
+                  const modelItem = copyData.modelItems && copyData.modelItems[index];
+                  if (modelItem) {
+                    scene.createModelItem({
+                      ...modelItem,
+                      id: newId,
+                      name: modelItem.name || 'Untitled'
+                    });
+                  }
+
+                  // Then create the ViewItem
+                  const newViewItem = {
+                    ...viewItem,
+                    id: newId,
+                    tile: CoordsUtils.add(viewItem.tile, { x: 1, y: 1 })
+                  };
+                  scene.createViewItem(newViewItem);
+                  if (!newItem) newItem = { type: 'ITEM' as const, id: newId };
+                });
+              }
+
+              // Paste rectangles
+              if (copyData.rectangles && copyData.rectangles.length > 0) {
+                copyData.rectangles.forEach((rectangle: any) => {
+                  const newId = generateId();
+                  idMap.set(rectangle.id, newId);
+                  const newRectangle = {
+                    ...rectangle,
+                    id: newId,
+                    from: CoordsUtils.add(rectangle.from, { x: 1, y: 1 }),
+                    to: CoordsUtils.add(rectangle.to, { x: 1, y: 1 })
+                  };
+                  scene.createRectangle(newRectangle);
+                  if (!newItem) newItem = { type: 'RECTANGLE' as const, id: newId };
+                });
+              }
+
+              // Paste textBoxes
+              if (copyData.textBoxes && copyData.textBoxes.length > 0) {
+                copyData.textBoxes.forEach((textBox: any) => {
+                  const newId = generateId();
+                  idMap.set(textBox.id, newId);
+                  const newTextBox = {
+                    ...textBox,
+                    id: newId,
+                    tile: CoordsUtils.add(textBox.tile, { x: 1, y: 1 })
+                  };
+                  scene.createTextBox(newTextBox);
+                  if (!newItem) newItem = { type: 'TEXTBOX' as const, id: newId };
+                });
+              }
+
+              // Paste connectors with updated anchor references
+              if (copyData.connectors && copyData.connectors.length > 0) {
+                console.log('Pasting connectors, idMap:', idMap);
+                copyData.connectors.forEach((connector: any) => {
+                  console.log('Original connector from clipboard:', connector);
+                  const newId = generateId();
+                  idMap.set(connector.id, newId);
+
+                  // Create a map for anchor IDs
+                  const anchorIdMap = new Map<string, string>();
+
+                  // Update all anchors with new IDs and item references
+                  const newAnchors = connector.anchors?.map((anchor: any) => {
+                    const newAnchorId = generateId();
+                    anchorIdMap.set(anchor.id, newAnchorId);
+
+                    const newRef: any = {};
+
+                    // Update item reference if it exists and is in idMap
+                    if (anchor.ref?.item) {
+                      const oldItemId = anchor.ref.item;
+                      const newItemId = idMap.get(oldItemId);
+                      console.log(`Remapping anchor item: ${oldItemId} -> ${newItemId}`);
+                      newRef.item = newItemId || anchor.ref.item;
+                    }
+
+                    // Keep tile reference as is (if it exists)
+                    if (anchor.ref?.tile) {
+                      newRef.tile = anchor.ref.tile;
+                    }
+
+                    return {
+                      id: newAnchorId,
+                      ref: newRef
+                    };
+                  }) || [];
+
+                  const newConnector = {
+                    ...connector,
+                    id: newId,
+                    anchors: newAnchors
+                  };
+                  console.log('Creating new connector:', newConnector);
+                  scene.createConnector(newConnector);
+                  if (!newItem) newItem = { type: 'CONNECTOR' as const, id: newId };
+                });
+              }
+
+              // Select the first newly pasted item
+              if (newItem) {
+                uiState.actions.setItemControls(newItem);
+              }
+
+              console.log('Items pasted from clipboard');
+            } catch (err) {
+              console.error('Failed to parse clipboard data:', err);
+            }
+          })
+          .catch(err => {
+            console.error('Failed to read clipboard:', err);
+          });
       }
 
       // Ctrl/Cmd+T で選択中のアイテムを水平反転（ダイアログが開いていない時のみ）

@@ -15,6 +15,7 @@ import { useResizeObserver } from 'src/hooks/useResizeObserver';
 import { ContextMenuManager } from 'src/components/ContextMenu/ContextMenuManager';
 import { useScene } from 'src/hooks/useScene';
 import { useModelStore } from 'src/stores/modelStore';
+import { useView } from 'src/hooks/useView';
 import { ExportImageDialog } from '../ExportImageDialog/ExportImageDialog';
 import { EditViewsDialog } from '../EditViewsDialog/EditViewsDialog';
 import { IconUploadDialog } from '../IconUploadDialog/IconUploadDialog';
@@ -99,6 +100,7 @@ export const UiOverlay = () => {
   const modelActions = useModelStore((state) => {
     return state.actions;
   });
+  const { changeView } = useView();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
@@ -380,7 +382,8 @@ export const UiOverlay = () => {
             key={view.id}
             selected={view.id === currentView.id}
             onClick={() => {
-              uiStateActions.setView(view.id);
+              const model = modelActions.get();
+              changeView(view.id, model);
               setViewMenuAnchor(null);
             }}
           >

@@ -44,6 +44,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useModelStore } from 'src/stores/modelStore';
 import { useUiStateStore } from 'src/stores/uiStateStore';
+import { useView } from 'src/hooks/useView';
 import { View } from 'src/types';
 
 interface SortableViewItemProps {
@@ -194,6 +195,7 @@ export const EditViewsDialog = ({ onClose }: Props) => {
   const modelActions = useModelStore((state) => state.actions);
   const currentViewId = useUiStateStore((state) => state.view);
   const uiStateActions = useUiStateStore((state) => state.actions);
+  const { changeView } = useView();
 
   const [localViews, setLocalViews] = useState(views);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -267,12 +269,13 @@ export const EditViewsDialog = ({ onClose }: Props) => {
     if (viewId === currentViewId && localViews.length > 1) {
       const remainingViews = localViews.filter((v) => v.id !== viewId);
       if (remainingViews.length > 0) {
-        uiStateActions.setView(remainingViews[0].id);
+        const model = modelActions.get();
+        changeView(remainingViews[0].id, model);
       }
     }
 
     setDeleteConfirm({ open: false, viewId: '', viewName: '' });
-  }, [deleteConfirm, currentViewId, localViews, uiStateActions]);
+  }, [deleteConfirm, currentViewId, localViews, modelActions, changeView]);
 
   const handleSave = useCallback(() => {
     // Update all views at once
