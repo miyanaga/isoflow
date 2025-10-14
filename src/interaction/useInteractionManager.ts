@@ -162,6 +162,16 @@ export const useInteractionManager = () => {
       }
     };
 
+    // Check if the target is an editable element (input, textarea, contenteditable)
+    const isEditableElement = (element: EventTarget | null): boolean => {
+      if (!element || !(element instanceof HTMLElement)) return false;
+
+      const tagName = element.tagName.toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea') return true;
+
+      return element.isContentEditable;
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
       // Shiftキーが押された時、一時的にPanモードに切り替え（ダイアログが開いていない時のみ）
       if (e.shiftKey && !e.repeat && uiState.mode.type !== 'PAN' && !uiState.dialog) {
@@ -173,7 +183,8 @@ export const useInteractionManager = () => {
       }
 
       // Ctrl/Cmd+X で選択中のアイテムを削除（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 'x' && !uiState.dialog) {
+      // Skip if an editable element is focused (allow normal text cut)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'x' && !uiState.dialog && !isEditableElement(e.target)) {
         const selectedItems = [];
         if (uiState.itemControls) {
           selectedItems.push(uiState.itemControls);
@@ -201,7 +212,8 @@ export const useInteractionManager = () => {
       }
 
       // Ctrl/Cmd+D で選択中のアイテムを複製（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && !uiState.dialog) {
+      // Skip if an editable element is focused
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && !uiState.dialog && !isEditableElement(e.target)) {
         const selectedItems = [];
         if (uiState.itemControls && uiState.itemControls.type !== 'ADD_ITEM') {
           selectedItems.push(uiState.itemControls);
@@ -280,7 +292,8 @@ export const useInteractionManager = () => {
       }
 
       // Ctrl/Cmd+C で選択中のアイテムをコピー（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && !uiState.dialog) {
+      // Skip if an editable element is focused (allow normal text copy)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && !uiState.dialog && !isEditableElement(e.target)) {
         const selectedItems = [];
         if (uiState.itemControls && uiState.itemControls.type !== 'ADD_ITEM') {
           selectedItems.push(uiState.itemControls);
@@ -345,7 +358,8 @@ export const useInteractionManager = () => {
       }
 
       // Ctrl/Cmd+V で選択中のアイテムを貼り付け（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && !uiState.dialog) {
+      // Skip if an editable element is focused (allow normal text paste)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && !uiState.dialog && !isEditableElement(e.target)) {
         e.preventDefault();
         navigator.clipboard.readText()
           .then(text => {
@@ -483,7 +497,8 @@ export const useInteractionManager = () => {
       }
 
       // Ctrl/Cmd+T で選択中のアイテムを水平反転（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 't' && !uiState.dialog) {
+      // Skip if an editable element is focused
+      if ((e.metaKey || e.ctrlKey) && e.key === 't' && !uiState.dialog && !isEditableElement(e.target)) {
         if (uiState.itemControls && uiState.itemControls.type === 'ITEM') {
           e.preventDefault();
           const itemId = uiState.itemControls.id;
@@ -495,13 +510,15 @@ export const useInteractionManager = () => {
       }
 
       // Ctrl/Cmd+E でExport（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 'e' && !uiState.dialog) {
+      // Skip if an editable element is focused
+      if ((e.metaKey || e.ctrlKey) && e.key === 'e' && !uiState.dialog && !isEditableElement(e.target)) {
         e.preventDefault();
         uiState.actions.setDialog('EXPORT_IMAGE');
       }
 
       // Ctrl/Cmd+P でPublish（ダイアログが開いていない時のみ）
-      if ((e.metaKey || e.ctrlKey) && e.key === 'p' && !uiState.dialog) {
+      // Skip if an editable element is focused
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p' && !uiState.dialog && !isEditableElement(e.target)) {
         e.preventDefault();
         uiState.actions.setDialog('PUBLISH_IMAGE');
       }
