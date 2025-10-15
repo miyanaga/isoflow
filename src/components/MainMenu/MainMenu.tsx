@@ -269,11 +269,31 @@ export const MainMenu = () => {
   }, [uiStateActions, modelActions, changeView]);
 
   const onAddView = useCallback(() => {
-    const newViewId = modelActions.addView();
-    const updatedModel = modelActions.get();
-    changeView(newViewId, updatedModel);
-    uiStateActions.setIsMainMenuOpen(false);
-  }, [modelActions, uiStateActions, changeView]);
+    const currentViews = views;
+    const defaultName = `View ${currentViews.length + 1}`;
+    let name: string | null = null;
+    let isValid = false;
+
+    // Keep asking until we get a valid unique name or user cancels
+    while (!isValid) {
+      name = window.prompt('Enter view name:', name || defaultName);
+      if (!name) return; // User cancelled
+
+      // Check if name already exists
+      if (currentViews.some(v => v.name === name)) {
+        alert('A view with this name already exists. Please choose a different name.');
+      } else {
+        isValid = true;
+      }
+    }
+
+    if (name) {
+      const newViewId = modelActions.addView(name);
+      const updatedModel = modelActions.get();
+      changeView(newViewId, updatedModel);
+      uiStateActions.setIsMainMenuOpen(false);
+    }
+  }, [modelActions, uiStateActions, changeView, views]);
 
   const onDuplicateView = useCallback((viewId: string) => {
     const viewToDuplicate = views.find(v => v.id === viewId);
