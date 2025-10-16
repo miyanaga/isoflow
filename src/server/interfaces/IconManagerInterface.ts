@@ -13,6 +13,7 @@ export interface IconData {
 export interface IconManagerInterface {
   initialize(): Promise<void>
   save(name: string, svg: string): Promise<void>
+  saveWithDeduplication(name: string, svg: string): Promise<string>
   exists(name: string): Promise<boolean>
   delete(name: string): Promise<void>
   index(query?: string): Promise<IconInfo[]>

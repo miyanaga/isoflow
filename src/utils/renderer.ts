@@ -725,22 +725,24 @@ export const getUnprojectedBounds = (view: View) => {
       tile: corner
     });
   });
-  const sortedCorners = sortByPosition(cornerPositions);
-  const topLeft = { x: sortedCorners.lowX, y: sortedCorners.lowY };
-  const size = getBoundingBoxSize(cornerPositions);
+
+  // すべてのコーナーポジションから実際の最小/最大のx, yを取得
+  const xs = cornerPositions.map((c) => c.x);
+  const ys = cornerPositions.map((c) => c.y);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  const maxX = Math.max(...xs);
+  const maxY = Math.max(...ys);
 
   return {
-    width: size.width,
-    height: size.height,
-    x: topLeft.x,
-    y: topLeft.y
+    width: maxX - minX,
+    height: maxY - minY,
+    x: minX,
+    y: minY
   };
 };
 
 export const getFitToViewParams = (view: View, viewportSize: Size) => {
-  const projectBounds = getProjectBounds(view);
-  const sortedCornerPositions = sortByPosition(projectBounds);
-  const boundingBoxSize = getBoundingBoxSize(projectBounds);
   const unprojectedBounds = getUnprojectedBounds(view);
   const zoom = clamp(
     Math.min(
@@ -750,9 +752,11 @@ export const getFitToViewParams = (view: View, viewportSize: Size) => {
     0,
     MAX_ZOOM
   );
+
+  // 実際の境界ボックスの中心点を計算
   const scrollTarget: Coords = {
-    x: (sortedCornerPositions.lowX + boundingBoxSize.width / 2) * zoom,
-    y: (sortedCornerPositions.lowY + boundingBoxSize.height / 2) * zoom
+    x: (unprojectedBounds.x + unprojectedBounds.width / 2) * zoom,
+    y: (unprojectedBounds.y + unprojectedBounds.height / 2) * zoom
   };
   const scroll = getTileScrollPosition(scrollTarget);
 

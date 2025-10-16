@@ -23,6 +23,25 @@ export class IconManager implements IconManagerInterface {
     await fs.writeFile(filePath, svg, 'utf-8')
   }
 
+  /**
+   * Save an icon with automatic filename deduplication.
+   * If a file with the same name exists, append a number (e.g., name_1, name_2).
+   * Returns the actual name used for saving.
+   */
+  async saveWithDeduplication(name: string, svg: string): Promise<string> {
+    let finalName = name
+    let counter = 1
+
+    // Check if the file already exists
+    while (await this.exists(finalName)) {
+      finalName = `${name}_${counter}`
+      counter++
+    }
+
+    await this.save(finalName, svg)
+    return finalName
+  }
+
   async exists(name: string): Promise<boolean> {
     const filePath = this.getFilePath(name)
     try {

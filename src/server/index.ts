@@ -306,13 +306,15 @@ app.post('/icons/download', asyncHandler(async (req: Request, res: Response) => 
       svgContent = svgContent.replace('<svg', `<svg${isometricAttr}`)
     }
 
-    // Save to icons directory
-    await iconManager.save(name, svgContent)
+    // Save to icons directory with automatic deduplication
+    const actualName = await iconManager.saveWithDeduplication(name, svgContent)
 
     res.json({
       success: true,
-      name,
-      message: 'Icon downloaded successfully'
+      name: actualName,
+      message: actualName !== name
+        ? `Icon saved as "${actualName}" (original name already existed)`
+        : 'Icon downloaded successfully'
     })
   } catch (error: any) {
     console.error('Icon download error:', error)

@@ -234,7 +234,9 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
         const iconName = iconType === 'flat' ? `${baseName}-flat` : baseName;
 
         // Download the icon with type metadata
-        await api.icons.download(icon.id, iconName, icon.title, iconType === 'isometric');
+        // The server will return the actual filename used (with deduplication if needed)
+        const response = await api.icons.download(icon.id, iconName, icon.title, iconType === 'isometric');
+        const actualIconName = response.name;
 
         // Remove from downloading set
         downloadingRef.current.delete(icon.id);
@@ -250,7 +252,7 @@ export const FreepikDialog = ({ onClose, onSelectIcon }: Props) => {
           // Get the updated icons from model store
           const currentState = modelActions.get();
           const customIcon = currentState.icons.find(
-            (i: Icon) => i.collection === 'CUSTOM' && i.id === `custom_${iconName}`
+            (i: Icon) => i.collection === 'CUSTOM' && i.id === `custom_${actualIconName}`
           );
 
           if (customIcon) {
