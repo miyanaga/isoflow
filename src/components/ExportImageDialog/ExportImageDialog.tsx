@@ -23,7 +23,6 @@ import {
   exportAsImage,
   downloadFile as downloadFileUtil,
   base64ToBlob,
-  generateGenericFilename,
   modelFromModelStore
 } from 'src/utils';
 import { ModelStore } from 'src/types';
@@ -60,6 +59,39 @@ export const ExportImageDialog = ({ onClose, quality = 3.0 }: Props) => {
     return modelFromModelStore(state);
   });
 
+  const sanitizeFilename = useCallback((value: string) => {
+    return value.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, ' ').trim();
+  }, []);
+
+  const currentViewName = useMemo(() => {
+    const view = model.views?.find((item) => item.id === currentView);
+    return view?.name?.trim() || model.documentName || model.title || '';
+  }, [model.views, model.documentName, model.title, currentView]);
+
+  const defaultFilenameBase = useMemo(() => {
+    const fallback = currentViewName || 'isoflow-export';
+    const sanitizedFallback = sanitizeFilename(fallback);
+    return sanitizedFallback || 'isoflow-export';
+  }, [currentViewName, sanitizeFilename]);
+
+  const defaultFilename = useMemo(() => {
+    return `${defaultFilenameBase}.png`;
+  }, [defaultFilenameBase]);
+
+  const [filename, setFilename] = useState(defaultFilename);
+  const [isFilenameDirty, setIsFilenameDirty] = useState(false);
+
+  useEffect(() => {
+    if (!isFilenameDirty) {
+      setFilename(defaultFilename);
+    }
+  }, [defaultFilename, isFilenameDirty]);
+
+  const handleFilenameChange = useCallback((value: string) => {
+    setIsFilenameDirty(true);
+    setFilename(value);
+  }, []);
+
   const unprojectedBounds = useMemo(() => {
     return getUnprojectedBounds();
   }, [getUnprojectedBounds]);
@@ -87,6 +119,16 @@ export const ExportImageDialog = ({ onClose, quality = 3.0 }: Props) => {
     }, 2000);
   }, [cropTransparent, cropMargin]);
 
+  const resolveFilename = useCallback(() => {
+    const trimmed = filename.trim();
+    const sanitized = sanitizeFilename(trimmed);
+    const candidate = sanitized || defaultFilename;
+    if (candidate.toLowerCase().endsWith('.png')) {
+      return candidate;
+    }
+    return `${candidate}.png`;
+  }, [filename, sanitizeFilename, defaultFilename]);
+
   const downloadFile = useCallback(() => {
     if (!imageData) return;
 
@@ -95,8 +137,8 @@ export const ExportImageDialog = ({ onClose, quality = 3.0 }: Props) => {
       'image/png;charset=utf-8'
     );
 
-    downloadFileUtil(data, generateGenericFilename('png'));
-  }, [imageData]);
+    downloadFileUtil(data, resolveFilename());
+  }, [imageData, resolveFilename]);
 
   const [showGrid, setShowGrid] = useState(false);
   const handleShowGridChange = (checked: boolean) => {
@@ -241,6 +283,19 @@ export const ExportImageDialog = ({ onClose, quality = 3.0 }: Props) => {
                 <Typography variant="caption" component="legend">
                   Options
                 </Typography>
+
+                <Box sx={{ mt: 1, mb: 1, maxWidth: 320 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="File name"
+                    value={filename}
+                    onChange={(event) => {
+                      handleFilenameChange(event.target.value);
+                    }}
+                    helperText="'.png' will be added automatically if omitted"
+                  />
+                </Box>
 
                 <FormControlLabel
                   label="Show grid"
