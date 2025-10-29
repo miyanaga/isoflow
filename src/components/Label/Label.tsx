@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Box, SxProps } from '@mui/material';
 
 const CONNECTOR_DOT_SIZE = 3;
+const CONNECTOR_DOT_OUTLINE_OFFSET = 2;
 
 export interface Props {
   labelHeight?: number;
@@ -42,6 +43,16 @@ export const Label = ({
             left: -CONNECTOR_DOT_SIZE / 2
           }}
         >
+          <line
+            x1={CONNECTOR_DOT_SIZE / 2}
+            y1={0}
+            x2={CONNECTOR_DOT_SIZE / 2}
+            y2={labelHeight}
+            strokeDasharray={`0, ${CONNECTOR_DOT_SIZE * 2}`}
+            stroke="white"
+            strokeWidth={CONNECTOR_DOT_SIZE + CONNECTOR_DOT_OUTLINE_OFFSET}
+            strokeLinecap="round"
+          />
           <line
             x1={CONNECTOR_DOT_SIZE / 2}
             y1={0}
