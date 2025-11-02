@@ -23,5 +23,8 @@ export const connectorSchema = z.object({
   style: z.enum(connectorStyleOptions).optional(),
   arrows: z.enum(arrowOptions).optional(),
   arrowOffset: z.number().optional(),
-  anchors: z.array(anchorSchema)
+  anchors: z.array(anchorSchema),
+  textSize: z.number().min(1).max(10).optional(),
+  textFrame: z.boolean().optional(),
+  textOffset: z.number().min(0).max(1).optional()
 });
