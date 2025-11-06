@@ -87,7 +87,7 @@ export const TextBoxControls = ({ id }: Props) => {
         <FormControlLabel
           control={
             <Switch
-              checked={textBox.textOutline ?? true}
+              checked={!!textBox.textOutline}
               onChange={(e) => {
                 updateTextBox(textBox.id, { textOutline: e.target.checked });
               }}

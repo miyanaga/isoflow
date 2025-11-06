@@ -53,7 +53,7 @@ export const TextBox = ({ textBox }: Props) => {
           sx={{
             ...fontProps,
             color: color.value,
-            ...(textBox.textOutline ?? true ? {
+            ...(textBox.textOutline ? {
               textShadow: `
                 -2px -2px 0 #fff,
                  2px -2px 0 #fff,

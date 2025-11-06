@@ -9,6 +9,25 @@ import {
 import { UiStateStore } from 'src/types';
 import { INITIAL_UI_STATE } from 'src/config';
 
+const DARK_MODE_KEY = 'isoflow-dark-mode';
+
+const loadDarkMode = (): boolean => {
+  try {
+    const stored = localStorage.getItem(DARK_MODE_KEY);
+    return stored === 'true';
+  } catch {
+    return false;
+  }
+};
+
+const saveDarkMode = (darkMode: boolean): void => {
+  try {
+    localStorage.setItem(DARK_MODE_KEY, darkMode.toString());
+  } catch {
+    // Ignore localStorage errors
+  }
+};
+
 const initialState = () => {
   return createStore<UiStateStore>((set, get) => {
     return {
@@ -32,6 +51,7 @@ const initialState = () => {
       },
       itemControls: null,
       enableDebugTools: false,
+      darkMode: loadDarkMode(),
       actions: {
         setView: (view) => {
           set({ view });
@@ -114,6 +134,10 @@ const initialState = () => {
         },
         setRendererEl: (el) => {
           set({ rendererEl: el });
+        },
+        setDarkMode: (darkMode) => {
+          saveDarkMode(darkMode);
+          set({ darkMode });
         }
       }
     };

@@ -153,6 +153,7 @@ export interface UiState {
   mouse: Mouse;
   rendererEl: HTMLDivElement | null;
   enableDebugTools: boolean;
+  darkMode: boolean;
 }
 
 export interface UiStateActions {
@@ -175,6 +176,7 @@ export interface UiStateActions {
   setMouse: (mouse: Mouse) => void;
   setRendererEl: (el: HTMLDivElement) => void;
   setEnableDebugTools: (enabled: boolean) => void;
+  setDarkMode: (darkMode: boolean) => void;
 }
 
 export type UiStateStore = UiState & {

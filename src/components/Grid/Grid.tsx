@@ -3,6 +3,7 @@ import { Box } from '@mui/material';
 import gsap from 'gsap';
 import { Size } from 'src/types';
 import gridTileSvg from 'src/assets/grid-tile-bg.svg';
+import gridTileSvgDark from 'src/assets/grid-tile-bg-dark.svg';
 import { useUiStateStore } from 'src/stores/uiStateStore';
 import { PROJECTED_TILE_SIZE } from 'src/config';
 import { SizeUtils } from 'src/utils/SizeUtils';
@@ -17,6 +18,9 @@ export const Grid = () => {
   });
   const zoom = useUiStateStore((state) => {
     return state.zoom;
+  });
+  const darkMode = useUiStateStore((state) => {
+    return state.darkMode;
   });
 
   useEffect(() => {
@@ -40,6 +44,8 @@ export const Grid = () => {
     }
   }, [scroll, zoom, isFirstRender, size]);
 
+  const gridSvg = darkMode ? gridTileSvgDark : gridTileSvg;
+
   return (
     <Box
       sx={{
@@ -58,7 +64,7 @@ export const Grid = () => {
           position: 'absolute',
           width: '100%',
           height: '100%',
-          background: `repeat url("${gridTileSvg}")`
+          background: `repeat url("${gridSvg}")`
         }}
       />
     </Box>

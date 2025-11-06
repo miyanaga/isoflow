@@ -69,8 +69,7 @@ export const TEXTBOX_DEFAULTS: Omit<TextBox, 'id' | 'tile'> = {
   orientation: 'X',
   fontSize: 0.6,
   content: 'Text',
-  color: 'color_black',
-  textOutline: true
+  color: 'color_black'
 };
 
 export const TEXTBOX_PADDING = 0.2;

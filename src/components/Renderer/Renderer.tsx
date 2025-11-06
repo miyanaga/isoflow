@@ -24,6 +24,9 @@ export const Renderer = ({ showGrid, backgroundColor, forceZoom }: RendererProps
   const mode = useUiStateStore((state) => {
     return state.mode;
   });
+  const darkMode = useUiStateStore((state) => {
+    return state.darkMode;
+  });
   const uiStateActions = useUiStateStore((state) => {
     return state.actions;
   });
@@ -41,6 +44,11 @@ export const Renderer = ({ showGrid, backgroundColor, forceZoom }: RendererProps
     return showGrid === undefined || showGrid;
   }, [showGrid]);
 
+  const bgColor = useMemo(() => {
+    if (backgroundColor) return backgroundColor;
+    return darkMode ? '#1a1a1a' : '#f6faff';
+  }, [backgroundColor, darkMode]);
+
   return (
     <Box
       ref={containerRef}
@@ -51,9 +59,7 @@ export const Renderer = ({ showGrid, backgroundColor, forceZoom }: RendererProps
         width: '100%',
         height: '100%',
         zIndex: 0,
-        bgcolor: (theme) => {
-          return backgroundColor ?? theme.customVars.customPalette.diagramBg;
-        }
+        bgcolor: bgColor
       }}
     >
       <SceneLayer forceZoom={forceZoom}>

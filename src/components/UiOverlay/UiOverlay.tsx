@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Box, useTheme, Typography, Stack, TextField, Menu, MenuItem } from '@mui/material';
+import { Box, useTheme, Typography, Stack, TextField, Menu, MenuItem, Select } from '@mui/material';
 import { ChevronRight, ArrowDropDown } from '@mui/icons-material';
 import { EditorModeEnum } from 'src/types';
 import { UiElement } from 'components/UiElement/UiElement';
@@ -104,6 +104,9 @@ export const UiOverlay = () => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
+  const darkMode = useUiStateStore((state) => {
+    return state.darkMode;
+  });
 
   const handleTitleClick = () => {
     if (editorMode === EditorModeEnum.EDITABLE) {
@@ -284,6 +287,33 @@ export const UiOverlay = () => {
                     {currentView.name}
                   </Typography>
                   <ArrowDropDown />
+                </Box>
+                <Box sx={{ ml: 2 }}>
+                  <Select
+                    value={darkMode ? 'dark' : 'light'}
+                    onChange={(e) => {
+                      uiStateActions.setDarkMode(e.target.value === 'dark');
+                    }}
+                    size="small"
+                    variant="standard"
+                    sx={{
+                      fontSize: '1.5rem',
+                      '& .MuiSelect-select': {
+                        padding: '4px 24px 4px 8px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      },
+                      '&::before': {
+                        display: 'none'
+                      },
+                      '&::after': {
+                        display: 'none'
+                      }
+                    }}
+                  >
+                    <MenuItem value="light" sx={{ fontSize: '1.5rem' }}>☀️</MenuItem>
+                    <MenuItem value="dark" sx={{ fontSize: '1.5rem' }}>🌙</MenuItem>
+                  </Select>
                 </Box>
               </Stack>
             </UiElement>
