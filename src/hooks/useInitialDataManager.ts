@@ -46,6 +46,52 @@ export const useInitialDataManager = () => {
 
       const initialData = _initialData;
 
+      // データ互換性のためのマイグレーション：古いカラーIDを処理
+      // color_black, color_white などの古いIDを現在のcolorsの最初の要素にマッピング
+      const legacyColorIds = ['color_black', 'color_white'];
+      const currentColorIds = new Set(initialData.colors.map((c) => c.id));
+
+      // 古いカラーIDが使用されているかチェックし、存在しない場合は警告を出す
+      const shouldMigrate = legacyColorIds.some((legacyId) => {
+        return !currentColorIds.has(legacyId);
+      });
+
+      if (shouldMigrate && initialData.colors.length > 0) {
+        const defaultColorId = initialData.colors[0].id;
+
+        // TextBoxesの古いカラーIDを更新
+        initialData.views.forEach((view) => {
+          view.textBoxes?.forEach((textBox) => {
+            if (textBox.color && !currentColorIds.has(textBox.color)) {
+              console.warn(
+                `Migrating textBox color "${textBox.color}" to "${defaultColorId}"`
+              );
+              textBox.color = defaultColorId;
+            }
+          });
+
+          // Connectorsの古いカラーIDを更新
+          view.connectors?.forEach((connector) => {
+            if (connector.color && !currentColorIds.has(connector.color)) {
+              console.warn(
+                `Migrating connector color "${connector.color}" to "${defaultColorId}"`
+              );
+              connector.color = defaultColorId;
+            }
+          });
+
+          // Rectanglesの古いカラーIDを更新
+          view.rectangles?.forEach((rectangle) => {
+            if (rectangle.color && !currentColorIds.has(rectangle.color)) {
+              console.warn(
+                `Migrating rectangle color "${rectangle.color}" to "${defaultColorId}"`
+              );
+              rectangle.color = defaultColorId;
+            }
+          });
+        });
+      }
+
       if (initialData.views.length === 0) {
         const updates = reducers.view({
           action: 'CREATE_VIEW',
