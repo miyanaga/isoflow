@@ -544,7 +544,7 @@ export const getTextWidth = (text: string, fontProps: FontProps) => {
 
 export const getTextBoxDimensions = (textBox: TextBox): Size => {
   const width = getTextWidth(textBox.content, {
-    fontSize: textBox.fontSize ?? TEXTBOX_DEFAULTS.fontSize,
+    fontSize: textBox.fontSize ?? TEXTBOX_DEFAULTS.fontSize!,
     fontFamily: DEFAULT_FONT_FAMILY,
     fontWeight: TEXTBOX_FONT_WEIGHT
   });

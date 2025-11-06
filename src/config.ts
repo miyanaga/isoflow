@@ -65,10 +65,12 @@ export const CONNECTOR_DEFAULTS: Required<Omit<Connector, 'id' | 'color'>> = {
 // is the grid that encompasses the two nodes + the offset below.
 export const CONNECTOR_SEARCH_OFFSET = { x: 1, y: 1 };
 
-export const TEXTBOX_DEFAULTS: Required<Omit<TextBox, 'id' | 'tile'>> = {
+export const TEXTBOX_DEFAULTS: Omit<TextBox, 'id' | 'tile'> = {
   orientation: 'X',
   fontSize: 0.6,
-  content: 'Text'
+  content: 'Text',
+  color: 'color_black',
+  textOutline: true
 };
 
 export const TEXTBOX_PADDING = 0.2;

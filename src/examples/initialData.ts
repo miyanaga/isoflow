@@ -17,6 +17,10 @@ const isopacks = flattenCollections([
 
 export const colors: Colors = [
   {
+    id: 'color_black',
+    value: '#000000'
+  },
+  {
     id: 'color1',
     value: '#a5b8f3'
   },
@@ -43,6 +47,10 @@ export const colors: Colors = [
   {
     id: 'color7',
     value: '#b3e5e3'
+  },
+  {
+    id: 'color8',
+    value: '#9e9e9e'
   }
 ];
 

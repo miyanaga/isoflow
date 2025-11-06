@@ -5,13 +5,16 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  Slider
+  Slider,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import { TextRotationNone as TextRotationNoneIcon } from '@mui/icons-material';
 import { useTextBox } from 'src/hooks/useTextBox';
 import { useUiStateStore } from 'src/stores/uiStateStore';
 import { getIsoProjectionCss } from 'src/utils';
 import { useScene } from 'src/hooks/useScene';
+import { ColorSelector } from 'src/components/ColorSelector/ColorSelector';
 import { ControlsContainer } from '../components/ControlsContainer';
 import { Section } from '../components/Section';
 import { DeleteButton } from '../components/DeleteButton';
@@ -35,6 +38,14 @@ export const TextBoxControls = ({ id }: Props) => {
           onChange={(e) => {
             updateTextBox(textBox.id, { content: e.target.value as string });
           }}
+        />
+      </Section>
+      <Section>
+        <ColorSelector
+          onChange={(color) => {
+            return updateTextBox(textBox.id, { color });
+          }}
+          activeColor={textBox.color}
         />
       </Section>
       <Section title="Text size">
@@ -71,6 +82,19 @@ export const TextBoxControls = ({ id }: Props) => {
             />
           </ToggleButton>
         </ToggleButtonGroup>
+      </Section>
+      <Section title="Text Outline">
+        <FormControlLabel
+          control={
+            <Switch
+              checked={textBox.textOutline ?? true}
+              onChange={(e) => {
+                updateTextBox(textBox.id, { textOutline: e.target.checked });
+              }}
+            />
+          }
+          label="Show white outline"
+        />
       </Section>
       <Section>
         <Box>

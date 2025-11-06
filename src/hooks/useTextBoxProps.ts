@@ -12,7 +12,7 @@ export const useTextBoxProps = (textBox: TextBox) => {
   const fontProps = useMemo(() => {
     return {
       fontSize:
-        UNPROJECTED_TILE_SIZE * (textBox.fontSize ?? TEXTBOX_DEFAULTS.fontSize),
+        UNPROJECTED_TILE_SIZE * (textBox.fontSize ?? TEXTBOX_DEFAULTS.fontSize!),
       fontFamily: DEFAULT_FONT_FAMILY,
       fontWeight: TEXTBOX_FONT_WEIGHT
     };

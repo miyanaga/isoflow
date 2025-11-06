@@ -4,6 +4,7 @@ import { toPx, CoordsUtils } from 'src/utils';
 import { useIsoProjection } from 'src/hooks/useIsoProjection';
 import { useTextBoxProps } from 'src/hooks/useTextBoxProps';
 import { useScene } from 'src/hooks/useScene';
+import { useColor } from 'src/hooks/useColor';
 
 interface Props {
   textBox: ReturnType<typeof useScene>['textBoxes'][0];
@@ -11,6 +12,7 @@ interface Props {
 
 export const TextBox = ({ textBox }: Props) => {
   const { paddingX, fontProps } = useTextBoxProps(textBox);
+  const color = useColor(textBox.color);
 
   const to = useMemo(() => {
     if (!textBox?.tile || !textBox?.size?.width) {
@@ -25,7 +27,7 @@ export const TextBox = ({ textBox }: Props) => {
   const { css } = useIsoProjection({
     from: textBox?.tile || { x: 0, y: 0 },
     to,
-    orientation: textBox?.orientation || 'HORIZONTAL'
+    orientation: textBox?.orientation || 'X'
   });
 
   // Early return if textBox data is missing
@@ -49,7 +51,20 @@ export const TextBox = ({ textBox }: Props) => {
       >
         <Typography
           sx={{
-            ...fontProps
+            ...fontProps,
+            color: color.value,
+            ...(textBox.textOutline ?? true ? {
+              textShadow: `
+                -2px -2px 0 #fff,
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                -2px  0   0 #fff,
+                 2px  0   0 #fff,
+                 0   -2px 0 #fff,
+                 0    2px 0 #fff
+              `
+            } : {})
           }}
         >
           {textBox.content}

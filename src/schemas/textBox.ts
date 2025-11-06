@@ -7,6 +7,8 @@ export const textBoxSchema = z.object({
   tile: coords,
   content: constrainedStrings.name,
   fontSize: z.number().optional(),
+  color: z.string().optional(),
+  textOutline: z.boolean().optional(),
   orientation: z
     .union([
       z.literal(ProjectionOrientationEnum.X),
