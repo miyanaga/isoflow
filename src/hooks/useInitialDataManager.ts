@@ -162,9 +162,9 @@ export const useInitialDataManager = () => {
   );
 
   const clear = useCallback(() => {
-    load({ ...INITIAL_DATA, icons: model.icons, colors: model.colors });
+    load({ ...INITIAL_DATA, icons: model.icons });
     uiStateActions.resetUiState();
-  }, [load, model.icons, model.colors, uiStateActions]);
+  }, [load, model.icons, uiStateActions]);
 
   return {
     load,

@@ -95,6 +95,34 @@ export const INITIAL_DATA: InitialData = {
       value: '#000000'
     },
     {
+      id: 'color1',
+      value: '#a5b8f3'
+    },
+    {
+      id: 'color2',
+      value: '#bbadfb'
+    },
+    {
+      id: 'color3',
+      value: '#f4eb8e'
+    },
+    {
+      id: 'color4',
+      value: '#f0aca9'
+    },
+    {
+      id: 'color5',
+      value: '#fad6ac'
+    },
+    {
+      id: 'color6',
+      value: '#a8dc9d'
+    },
+    {
+      id: 'color7',
+      value: '#b3e5e3'
+    },
+    {
       id: 'color8',
       value: '#9e9e9e'
     }
