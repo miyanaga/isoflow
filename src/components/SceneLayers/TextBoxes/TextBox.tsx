@@ -12,7 +12,7 @@ interface Props {
 
 export const TextBox = ({ textBox }: Props) => {
   const { paddingX, fontProps } = useTextBoxProps(textBox);
-  const color = useColor(textBox.color);
+  const color = useColor(textBox.color, true);
 
   const to = useMemo(() => {
     if (!textBox?.tile || !textBox?.size?.width) {

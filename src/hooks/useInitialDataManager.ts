@@ -46,10 +46,24 @@ export const useInitialDataManager = () => {
 
       const initialData = _initialData;
 
+      // 必須カラーの定義（テキスト用）
+      const requiredColors = [
+        { id: 'color_black', value: '#000000' },
+        { id: 'color8', value: '#9e9e9e' }
+      ];
+
+      // 必須カラーが存在しない場合は追加
+      const currentColorIds = new Set(initialData.colors.map((c) => c.id));
+      requiredColors.forEach((requiredColor) => {
+        if (!currentColorIds.has(requiredColor.id)) {
+          initialData.colors.push(requiredColor);
+          currentColorIds.add(requiredColor.id);
+        }
+      });
+
       // データ互換性のためのマイグレーション：古いカラーIDを処理
       // color_black, color_white などの古いIDを現在のcolorsの最初の要素にマッピング
-      const legacyColorIds = ['color_black', 'color_white'];
-      const currentColorIds = new Set(initialData.colors.map((c) => c.id));
+      const legacyColorIds = ['color_white'];
 
       // 古いカラーIDが使用されているかチェックし、存在しない場合は警告を出す
       const shouldMigrate = legacyColorIds.some((legacyId) => {

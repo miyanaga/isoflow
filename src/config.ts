@@ -69,7 +69,7 @@ export const TEXTBOX_DEFAULTS: Omit<TextBox, 'id' | 'tile'> = {
   orientation: 'X',
   fontSize: 0.6,
   content: 'Text',
-  color: 'color1' // デフォルトの黒色（#000000）
+  color: 'color_black' // デフォルトの黒色（#000000）
 };
 
 export const TEXTBOX_PADDING = 0.2;
@@ -88,7 +88,17 @@ export const INITIAL_DATA: InitialData = {
   title: 'Untitled',
   version: '',
   icons: [],
-  colors: [DEFAULT_COLOR],
+  colors: [
+    DEFAULT_COLOR,
+    {
+      id: 'color_black',
+      value: '#000000'
+    },
+    {
+      id: 'color8',
+      value: '#9e9e9e'
+    }
+  ],
   items: [],
   views: [],
   fitToView: false
